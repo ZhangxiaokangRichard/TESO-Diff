@@ -1,0 +1,14 @@
+# S1 盘旋上升/下降任务（docs §16.1）
+# 形状局部平面定义圆/螺旋；projector 对投影面做随机角度/坡度参数化。
+
+task:
+  type: circle
+  radius_m: [40.0, 90.0]       # 圆半径范围
+  laps: [2.0, 6.0]             # 圈数范围
+  climb_rate_mps: [-1.5, 1.5]  # 爬升率，正为盘旋上升
+  airspeed_cmd_mps: [14.0, 20.0]
+  projector:
+    roll_deg: [-15.0, 15.0]    # 投影面绕纵轴旋转
+    pitch_deg: [-10.0, 10.0]   # 投影面坡度
+    azimuth_deg: [0.0, 360.0]  # 水平朝向
+  seed: null                   # null = 随机；指定值可重放

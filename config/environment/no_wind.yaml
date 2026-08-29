@@ -1,0 +1,10 @@
+# W0 无风环境（docs §16.2）
+# 物理零获能基线：验证 energy label 与控制器本身。
+
+wind:
+  matrix_class: W0
+  type: no_wind
+  disturbance:
+    background_wind_mps: [0.0, 0.0]  # 背景水平风范围
+    turbulence: off
+    gust: off

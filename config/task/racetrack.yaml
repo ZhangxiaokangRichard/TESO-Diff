@@ -1,0 +1,15 @@
+# S3 跑马场形任务（docs §16.1）
+# 两段直线 + 两个半圆，直线长度、半圆半径、高度剖面。
+
+task:
+  type: racetrack
+  straight_m: [100.0, 300.0]   # 直线段长度范围
+  radius_m: [40.0, 90.0]       # 半圆半径范围
+  laps: [2.0, 6.0]
+  climb_rate_mps: [-1.5, 1.5]  # 高度剖面爬升率
+  airspeed_cmd_mps: [14.0, 20.0]
+  projector:
+    roll_deg: [-15.0, 15.0]
+    pitch_deg: [-10.0, 10.0]
+    azimuth_deg: [0.0, 360.0]
+  seed: null

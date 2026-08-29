@@ -1,0 +1,23 @@
+# 构建产物
+build/
+*.o
+*.obj
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 数据集输出（正式数据不进入版本库）
+dataset/smoke/*.h5
+dataset/formal/*.h5
+build/test_output/
+
+# IDE
+.vscode/
+.idea/
+
+# 日志临时文件
+*.log

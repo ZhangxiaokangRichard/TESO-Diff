@@ -1,0 +1,16 @@
+# S2 8 字盘旋上升/下降任务（docs §16.1）
+# 两圆相切 8 字，两圆半径、旋转方向、总爬升/下降梯度。
+
+task:
+  type: figure8
+  radius_a_m: [40.0, 90.0]     # 圆 A 半径范围
+  radius_b_m: [40.0, 90.0]     # 圆 B 半径范围
+  turn_direction: [1, -1]      # 旋转方向（两圆相反/相同枚举，1=右旋）
+  laps: [2.0, 6.0]
+  climb_rate_mps: [-1.5, 1.5]
+  airspeed_cmd_mps: [14.0, 20.0]
+  projector:
+    roll_deg: [-15.0, 15.0]
+    pitch_deg: [-10.0, 10.0]
+    azimuth_deg: [0.0, 360.0]
+  seed: null

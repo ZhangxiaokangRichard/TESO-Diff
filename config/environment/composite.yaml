@@ -1,0 +1,21 @@
+# W3 复合风场环境（docs §16.2）
+# thermal + shear 同时存在，机制参数独立随机，保存 mechanism truth。
+
+wind:
+  matrix_class: W3
+  type: composite
+  thermal:
+    radius_m: [30.0, 120.0]
+    peak_vertical_mps: [0.5, 5.0]
+    shape: gaussian
+    vertical_extent_m: [50.0, 500.0]
+  shear:
+    delta_v_mps: [2.0, 15.0]
+    thickness_m: [5.0, 80.0]
+    layer_shape: tanh
+    layer_orientation_deg: [0.0, 360.0]
+    layer_altitude_m: [200.0, 1500.0]
+  disturbance:
+    background_wind_mps: [0.0, 6.0]
+    turbulence: off
+    gust: off

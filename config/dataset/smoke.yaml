@@ -1,0 +1,39 @@
+# 数据集 smoke 配置（docs §34 Phase 2b-S0 / §44）
+# 1~8 env，<10 min wall time，内容 S1 盘旋 × {W0 no wind / W1 thermal}，
+# 只验证 schema 和 writer。
+
+experiment:
+  name: smoke_circle_v01
+  seed: 10001
+
+simulation:
+  dt_plant: 0.02
+  num_envs: 8
+
+aircraft:
+  config: avanti2_nominal
+
+controller:
+  config: tecs_l1_pid_v01
+  outer_rate: 20
+  inner_rate: 50
+
+task:
+  type: circle
+  radius: [40, 90]
+  climb_rate: [-1.5, 1.5]
+  projector:
+    roll_deg: [-15, 15]
+    pitch_deg: [-10, 10]
+    azimuth_deg: [0, 360]
+
+wind:
+  matrix_class: [W0, W1]   # smoke 覆盖无风与热气流
+  type: thermal
+  radius: [30, 120]
+  strength: [0.5, 5.0]
+
+dataset:
+  anchors: 1000
+  branches: 8
+  horizons: [1.5, 3.0, 6.0]

@@ -1,0 +1,16 @@
+# 风输入 smoke 测试环境（docs §6.14 T04~T06）
+# 用于逐项风输入测试：恒定水平风 / 恒定垂直风 / step gust。
+
+wind:
+  matrix_class: smoke
+  type: uniform
+  uniform_flat_earth_mps: [0.0, 0.0, 0.0]  # Xe/Ye/Ze，Z 向下为正
+  disturbance:
+    background_wind_mps: [0.0, 0.0]
+    turbulence: off
+    gust:
+      enabled: false
+      amplitude_mps: [1.0, 8.0]
+      onset_s: 5.0
+      duration_s: 2.0
+      axis: [1.0, 0.0, 0.0]   # 三轴 gust 方向分量

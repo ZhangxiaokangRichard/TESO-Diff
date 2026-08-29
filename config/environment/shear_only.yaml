@@ -1,0 +1,15 @@
+# W2 仅梯度切变风环境（docs §16.2）
+# 水平/垂直切变层（ΔV、厚度、方向、高度），无上升气流。
+
+wind:
+  matrix_class: W2
+  type: shear
+  delta_v_mps: [2.0, 15.0]
+  thickness_m: [5.0, 80.0]
+  layer_shape: tanh         # tanh | piecewise
+  layer_orientation_deg: [0.0, 360.0]
+  layer_altitude_m: [200.0, 1500.0]
+  disturbance:
+    background_wind_mps: [0.0, 6.0]
+    turbulence: off
+    gust: off

@@ -1,0 +1,17 @@
+# S4 GPS 三角任务（docs §16.1）
+# 三个圆角顶点 + 三条直线，边长、圆角半径、各边爬升/下降坡度。
+# 注：GPS 三角留到 Phase 2b 数据集扩展（docs §6.1），Phase 2a 只做
+# 盘旋 / 8 字 / 跑马场三条封闭航迹。
+
+task:
+  type: gps_triangle
+  side_m: [150.0, 400.0]       # 边长范围
+  corner_radius_m: [30.0, 80.0] # 圆角半径范围
+  laps: [2.0, 6.0]
+  climb_rate_mps: [-1.5, 1.5]  # 各边爬升/下降坡度
+  airspeed_cmd_mps: [14.0, 20.0]
+  projector:
+    roll_deg: [-15.0, 15.0]
+    pitch_deg: [-10.0, 10.0]
+    azimuth_deg: [0.0, 360.0]
+  seed: null

@@ -1,0 +1,39 @@
+# AVANTI2 6DOF 固定翼机型配置（phase1 冻结参数）
+#
+# 与 runtime/fixedwing 的 C ABI 一致（ABI 版本 0x00010000）：
+# - 固定步长 dt_plant = 0.02 s（fixed-step ODE4，50 Hz）
+# - 7 输入：delta_e/a/r 归一化 [-1,1]、throttle [0,1]、flat-Earth 风 [3]
+# - 4 组输出：alpha/beta（rad）、NEU（Up-positive）、Euler（deg）、BODY（SI）
+# - 固化初值：位置 [0,0,-1000] m、u/v/w=[14.1,0,0.0251] m/s、
+#   姿态 [0,0.00178,0] rad、角速度 [0,0,0] rad/s
+#
+# 注意：当前 ABI 未开放任意初始状态/在线气动参数；D6 机型随机化需
+# 在 Phase 2b 扩展模型与 ABI（docs/interface.md §7、TESO-Diff_phase1.md §13）。
+
+aircraft:
+  name: avanti2_nominal
+  model: AVANTI2_ertmodel0827
+  abi_version: 0x00010000
+
+plant:
+  dt_plant: 0.02          # s，固定积分步长，与 .so 一致
+  solver: ode4            # fixed-step RK4
+
+input_units:
+  delta_e_norm: "[-1,1] ~ [-12,+12] deg"
+  delta_a_norm: "[-1,1] ~ [-10,+10] deg"
+  delta_r_norm: "[-1,1] ~ [-22,+22] deg"
+  throttle_01: "[0,1]"
+  wind_flat_earth_mps: "Xe/Ye/Ze m/s, Ze down-positive"
+
+output_units:
+  alpha_beta: rad
+  neu: "North/East/Altitude m, Up-positive"
+  euler_rpy: deg
+  body: "u,v,w m/s; p,q,r rad/s; derivatives SI"
+
+init_state:
+  position_ne_alt_m: [0.0, 0.0, 1000.0]
+  velocity_body_mps: [14.1, 0.0, 0.0251]
+  euler_rad: [0.0, 0.00178, 0.0]
+  rates_body_radps: [0.0, 0.0, 0.0]
