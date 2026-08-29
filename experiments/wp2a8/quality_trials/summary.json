@@ -1,0 +1,56 @@
+{
+  "config": {
+    "inner_source": "tuning_02_attitude_cascade_ga/result.json",
+    "outer_source": "tuning_03_outer_circle_ga/result.json"
+  },
+  "trials": [
+    {
+      "trial": "T11_circle",
+      "duration_s": 119.98,
+      "cross_mae_m": 0.1847782916301017,
+      "cross_rmse_m": 0.1847783028164058,
+      "alt_rmse_m": 0.0017455216831612995,
+      "tas_rmse_mps": 0.0010511133186856057,
+      "phi_track_mae_deg": 0.7755218072944227,
+      "theta_track_mae_deg": 1.002097765526581,
+      "max_phi_deg": 31.251619380187464,
+      "nan": false
+    },
+    {
+      "trial": "T11b_circle_wind",
+      "duration_s": 119.98,
+      "cross_mae_m": 0.21426103970108626,
+      "cross_rmse_m": 0.22375284990672925,
+      "alt_rmse_m": 2.3025090484243704,
+      "tas_rmse_mps": 0.35420490149522177,
+      "phi_track_mae_deg": 0.7503939940169896,
+      "theta_track_mae_deg": 2.034916093356247,
+      "max_phi_deg": 30.8520292529662,
+      "nan": false
+    },
+    {
+      "trial": "T12_figure8",
+      "duration_s": 149.98,
+      "cross_mae_m": 7.398985414478887,
+      "cross_rmse_m": 9.428299536441152,
+      "alt_rmse_m": 1.4449090584596542,
+      "tas_rmse_mps": 0.9084120607124822,
+      "phi_track_mae_deg": 8.433711115465913,
+      "theta_track_mae_deg": 3.4214952010792605,
+      "max_phi_deg": 58.081683768508334,
+      "nan": false
+    },
+    {
+      "trial": "T13_racetrack",
+      "duration_s": 149.98,
+      "cross_mae_m": 15.176383382895661,
+      "cross_rmse_m": 18.55169102997487,
+      "alt_rmse_m": 0.7631452408631166,
+      "tas_rmse_mps": 0.46362801495664313,
+      "phi_track_mae_deg": 6.747777663976863,
+      "theta_track_mae_deg": 2.097418305278383,
+      "max_phi_deg": 53.1864652850727,
+      "nan": false
+    }
+  ]
+}

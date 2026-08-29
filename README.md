@@ -57,15 +57,16 @@ scripts/run_phase2a_smoke.sh
 python3 scripts/benchmark_runtime.py --envs 1 8 32 --seconds 60
 ```
 
-## 当前进度（phase2_sp1，详见 docs/build_logs/phase2_sp1.md）
+## 当前进度（详见 docs/build_logs/phase2_sp1.md、phase2_sp2.md）
 
 - [x] 按 phase2 §6.2 搭建项目目录架构
 - [x] 从 phase1 复制 6DOF runtime（源码 + C ABI + `.so` + ctypes 封装 + 回归测试）
 - [x] 根 CMakeLists + runtime/fixedwing/CMakeLists（Ubuntu 无 MATLAB 构建）
-- [x] controller/eso/simulation 包骨架与冻结接口（§6.12 数据结构 + PID）
-- [x] config YAML（aircraft/controller/task/environment/dataset）
-- [ ] WP2A-8 Python 张量控制器闭环（TECS/L1/协调转弯 + PID）
-- [ ] WP2A-9 闭环 harness、WP2A-10 3 条封闭航迹闭环 + avanti_eso 张量收集
+- [x] 舵面符号复测（delta_e 正→低头 / delta_a 正→左滚 / delta_r 正→右偏航）
+- [x] WP2A-8 v2 控制器改造（PX4 架构）：串级姿态内环（角度 P + 角速率 FF/P/PI + 空速缩放 + 协调转弯前馈）、能量 TECS、L1+NPFG 风三角侧向制导、PX4 Circle（loiter）盘旋模式
+- [x] 限定记忆 GA 整定：内环姿态跟踪（tuning_02）、外环盘旋闭环（tuning_03）
+- [x] WP2A-8 控制品质试验（盘旋/8 字/跑马场轨迹 + 姿态/角速度/速度跟踪图像）
+- [ ] WP2A-9 闭环 harness 正式验收、WP2A-10 3 条封闭航迹矩阵 + avanti_eso 张量收集
 - [ ] Gate A 验收（docs §6.17）
 
 ## 时间契约（phase1 冻结）

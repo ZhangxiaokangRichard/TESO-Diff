@@ -1,0 +1,53 @@
+{
+  "experiment": "tuning_02_attitude_cascade_ga",
+  "architecture": "px4_cascade",
+  "mu": 12,
+  "lambda": 12,
+  "generations": 40,
+  "seed": 20260830,
+  "elapsed_s": 122.21263718605042,
+  "best_fitness": 5.470785760322183,
+  "genes": {
+    "angle_roll_kp": 9.8969251103461,
+    "angle_pitch_kp": 5.9531317322756,
+    "angle_yaw_kp": 6.0,
+    "roll_rate_kp": 0.9003748031651372,
+    "roll_rate_ff": 0.8221162835069216,
+    "pitch_rate_kp": 0.5120005447315703,
+    "pitch_rate_ki": 3.413194566294354,
+    "pitch_rate_ff": 0.023565392578749858,
+    "yaw_rate_kp": 1.3333808891014793,
+    "yaw_rate_ki": 3.802015711222917,
+    "yaw_rate_ff": 0.40631424012145534,
+    "theta_trim_deg": -6.0,
+    "throttle": 0.4744334707311851
+  },
+  "theta_trim_deg": -6.0,
+  "throttle": 0.4744334707311851,
+  "inner_cfg": {
+    "dt": 0.02,
+    "angle_roll_kp": 9.8969251103461,
+    "angle_pitch_kp": 5.9531317322756,
+    "angle_yaw_kp": 6.0,
+    "p_limit_degps": 60.0,
+    "q_limit_degps": 45.0,
+    "r_limit_degps": 30.0,
+    "roll": {
+      "rate_kp": 0.9003748031651372,
+      "rate_ff": 0.8221162835069216
+    },
+    "pitch": {
+      "rate_kp": 0.5120005447315703,
+      "rate_ki": 3.413194566294354,
+      "rate_ff": 0.023565392578749858
+    },
+    "yaw": {
+      "rate_kp": 1.3333808891014793,
+      "rate_ki": 3.802015711222917,
+      "rate_ff": 0.40631424012145534
+    },
+    "coordinated_turn_ff_gain": 1.0,
+    "v_trim_mps": 16.0,
+    "beta_gain": 0.5
+  }
+}

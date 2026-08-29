@@ -51,7 +51,11 @@ class ControlReference:
 
 @dataclass
 class ControlObservation:
-    """来自 FWOutput 的机体系观测（内部统一 rad）。"""
+    """来自 FWOutput 的机体系 + NEU 观测（内部统一 rad）。
+
+    neu_pos / neu_vel / tas 为 WP2A-8 新增（外环 L1/TECS 需要），
+    可选字段：None 时表示未提供。
+    """
 
     u: np.ndarray   # [B] m/s
     v: np.ndarray   # [B] m/s
@@ -64,10 +68,22 @@ class ControlObservation:
     psi: np.ndarray    # [B] rad
     alpha: np.ndarray  # [B] rad
     beta: np.ndarray   # [B] rad
+    neu_pos: Optional[np.ndarray] = None  # [B,3] North/East/Altitude，m（Up-positive）
+    neu_vel: Optional[np.ndarray] = None  # [B,3] Ve_n/Ve_e/Up，m/s
+    tas: Optional[np.ndarray] = None       # [B] 真空速近似（无风时 = 机体速度模），m/s
+    wind_neu: Optional[np.ndarray] = None  # [B,2] 飞控风估计（North/East 水平分量，m/s）
+                                           # NPFG 制导用，WP2A-8 v2 新增
 
     def __post_init__(self) -> None:
-        _check_batch(self.u, self.v, self.w, self.p, self.q, self.r,
-                     self.phi, self.theta, self.psi, self.alpha, self.beta)
+        batch = _check_batch(self.u, self.v, self.w, self.p, self.q, self.r,
+                             self.phi, self.theta, self.psi, self.alpha, self.beta)
+        for array in (self.neu_pos, self.neu_vel):
+            if array is not None and array.shape != (batch, 3):
+                raise ValueError(f"neu array shape mismatch: {array.shape}")
+        if self.wind_neu is not None and self.wind_neu.shape != (batch, 2):
+            raise ValueError(f"wind_neu shape mismatch: {self.wind_neu.shape}")
+        if self.tas is not None and self.tas.shape[0] != batch:
+            raise ValueError("tas batch mismatch")
 
     @classmethod
     def from_fw_outputs(cls, outputs) -> "ControlObservation":
@@ -77,10 +93,11 @@ class ControlObservation:
         """
         batch = len(outputs)
         deg = np.pi / 180.0
+        body_vel = np.array([list(o.velocity_body_mps) for o in outputs])
         return cls(
-            u=np.array([o.velocity_body_mps[0] for o in outputs]),
-            v=np.array([o.velocity_body_mps[1] for o in outputs]),
-            w=np.array([o.velocity_body_mps[2] for o in outputs]),
+            u=body_vel[:, 0],
+            v=body_vel[:, 1],
+            w=body_vel[:, 2],
             p=np.array([o.rates_body_radps[0] for o in outputs]),
             q=np.array([o.rates_body_radps[1] for o in outputs]),
             r=np.array([o.rates_body_radps[2] for o in outputs]),
@@ -89,6 +106,10 @@ class ControlObservation:
             psi=np.array([o.euler_rpy_deg[2] for o in outputs]) * deg,
             alpha=np.array([o.alpha_rad for o in outputs]),
             beta=np.array([o.beta_rad for o in outputs]),
+            neu_pos=np.array([list(o.position_ne_alt_m) for o in outputs]),
+            neu_vel=np.array([list(o.velocity_ne_up_mps) for o in outputs]),
+            tas=np.linalg.norm(body_vel, axis=1),
+            wind_neu=None,  # 风估计由飞控风估计器（FC wind estimate）填充
         )
 
 

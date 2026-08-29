@@ -1,46 +1,79 @@
-# Python 张量并行控制器参数（docs/TESO-Diff_phase2.md §6.11/§6.12）
+# Python 张量并行控制器参数（WP2A-8 v2：PX4 串级架构，docs/TESO-Diff_phase2.md §6.11）
 #
-# 结构：外环（L1 + TECS + 协调转弯）+ 内环（PID 姿态）。
+# 结构（参考 PX4 固定翼控制器系列文章）：
+#   外环：NPFG/L1 侧向制导 → a_cmd/ψ_cmd；TECS 能量控制 → θ_cmd/油门；
+#         协调转弯律 → φ_cmd（含升力补偿）
+#   内环：串级姿态控制 —— 角度环 P → 期望角速率；角速率环 FF+P/PI
+#         （空速缩放：控制项 (V_trim/V)^2，前馈项 V_trim/V）
 # 控制器不编译 .so，纯 Python 张量实现，可对 B 个实例一次解算。
-# 参数在 WP2A-8 闭环调试中整定；此处为占位初值。
+# 数值来自 WP2A-8 限定记忆 GA 整定（experiments/wp2a8/）：
+#   tuning_02_attitude_cascade_ga（串级内环姿态跟踪）
+#   tuning_03_outer_circle_ga（外环 NPFG/TECS 盘旋闭环）
 
 controller:
-  name: tecs_l1_pid_v01
-  outer_rate_hz: 20        # 外环更新频率（TECS/L1/协调转弯）
+  name: px4_cascade_npfg_tecs_v01
+  outer_rate_hz: 20        # 外环更新频率（NPFG/TECS/协调转弯）
   inner_rate_hz: 50        # 内环更新频率，与 plant 同频
   batch_compatible: true   # 全张量化，无逐实例 Python 循环
 
+inner:
+  dt: 0.02
+  angle_roll_kp: 9.897     # rad/s per rad（角度环 → 期望滚转角速率）
+  angle_pitch_kp: 5.953
+  angle_yaw_kp: 6.0
+  p_limit_degps: 60.0      # 期望角速率限幅
+  q_limit_degps: 45.0
+  r_limit_degps: 30.0
+  roll:
+    rate_kp: 0.900         # 角速率环 P（滚转不加 I：气动阻尼足够）
+    rate_ff: 0.822         # 期望角加速度前馈
+  pitch:
+    rate_kp: 0.512
+    rate_ki: 3.413         # 俯仰速率积分（建立配平舵量）
+    rate_ff: 0.024
+  yaw:
+    rate_kp: 1.333
+    rate_ki: 3.802
+    rate_ff: 0.406
+  coordinated_turn_ff_gain: 1.0  # r_ff = g·tanφ·cosθ/V
+  v_trim_mps: 16.0         # 空速缩放配平速度
+  airspeed_scale_min: 0.25
+  airspeed_scale_max: 4.0
+  beta_gain: 0.5           # 侧滑阻尼
+
 outer:
-  l1:
-    period_s: 10.0         # L1 参考距离对应时间，WP2A-8 整定
-    damping: 0.75
+  l1:                      # NPFG 制导（PX4 参数化）
+    npfg_enabled: true
+    period_s: 20.0         # 先调 period（越小转弯越急）
+    damping: 0.863         # 0.65~0.85，步长 0.05
+    l1_dist_min_m: 20.0
+    l1_dist_max_m: 300.0
     a_cmd_limit_mps2: 15.0
-  tecs:
-    total_energy_kp: 0.2   # 总能量误差 → 油门（占位）
-    total_energy_ki: 0.05
-    balance_kp: 0.3        # 能量分配误差 → 俯仰（占位）
-    throttle_limits: [0.0, 1.0]
-    gamma_cmd_limit_deg: [-15.0, 15.0]
+    circle_kr: 1.5         # PX4 Circle 径向误差增益
+    circle_kv: 1.581       # PX4 Circle 径向速度阻尼
   coordinated_turn:
     bank_limit_deg: 30.0
     bank_rate_limit_degps: 15.0
-
-inner:
-  roll:
-    kp: 0.8
-    ki: 0.1
-    kd: 0.02
-    output_limits: [-1.0, 1.0]    # delta_a 归一化
-  pitch:
-    kp: 0.8
-    ki: 0.1
-    kd: 0.02
-    output_limits: [-1.0, 1.0]    # delta_e 归一化
-  yaw:
-    kp: 0.5
-    ki: 0.02
-    kd: 0.0
-    output_limits: [-1.0, 1.0]    # delta_r 归一化
+    dt: 0.02
+  tecs:                    # 总能量控制
+    dt: 0.02
+    throttle_trim: 0.533
+    theta_trim_deg: -1.526
+    energy_kp: 0.608       # STE_err → 能量变化率需求
+    throttle_kp: 0.361
+    throttle_ki: 0.460
+    airspeed_kp: 1.0       # V_err → V̇_sp
+    airspeed_ki: 0.232
+    height_kp: 0.166       # h_err → climb_sp
+    balance_kp: 1.156      # 能量分配误差 → θ
+    balance_ki: 0.889
+    gamma_ff_gain: 0.718   # γ_sp 前馈
+    bank_comp_gain: 0.719  # 转弯升力补偿 (1/cosφ - 1) 系数
+    climb_sp_limit_mps: 5.0
+    gamma_limit_deg: 20.0
+    v_dot_limit_mps2: 3.0
+    theta_limit_deg: 20.0
+    tas_derivative_tau: 0.2
 
 # 长期 TESO action 目标（docs §6.11）：
 #   a = [V_a*, gamma*, turn_rate*, gamma_rate*, cT, Tq]
