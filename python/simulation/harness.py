@@ -57,6 +57,8 @@ class ClosedLoopHarness:
         epoch_s: float = 0.0,
         wind_est_tau_s: float = 1.0,
         wind_est_bias: tuple[float, float] = (0.0, 0.0),
+        task_type: str = "path",
+        loiter_segments: Optional[tuple] = None,
     ):
         self.library = library
         self.controller = controller
@@ -69,6 +71,22 @@ class ClosedLoopHarness:
         self.controller_interval = max(1, int(round(1.0 / controller_rate_hz / dt_plant)))
         self.throttle_mode = throttle_mode
         self.epoch_s = epoch_s
+        # 任务类型与 loiter 切圆段（figure8/racetrack setpoint 导航）
+        self.task_type = task_type
+        self.loiter_centers: Optional[np.ndarray] = None
+        self.loiter_entry: Optional[np.ndarray] = None
+        self.loiter_exit: Optional[np.ndarray] = None
+        self.loiter_radius: Optional[np.ndarray] = None
+        self.loiter_directions: Optional[np.ndarray] = None
+        self.loiter_sweep_rad: Optional[np.ndarray] = None
+        if loiter_segments is not None:
+            centers, entries, exits, directions, sweeps, radius = loiter_segments
+            self.loiter_centers = np.asarray(centers)[None, :, :]
+            self.loiter_entry = np.asarray(entries)[None, :, :]
+            self.loiter_exit = np.asarray(exits)[None, :, :]
+            self.loiter_directions = np.asarray(directions)[None, :]
+            self.loiter_sweep_rad = np.asarray(sweeps)[None, :]
+            self.loiter_radius = np.asarray([radius])
         # 飞控风估计（docs §15）：truth → 一阶低通 → 常值偏差，NPFG 制导用
         self.wind_est_tau = wind_est_tau_s
         self.wind_est_bias = np.asarray(wind_est_bias, dtype=np.float64)
@@ -82,6 +100,13 @@ class ClosedLoopHarness:
             altitude_cmd=np.array([self.altitude_cmd]),
             path=self.task_path,
             throttle_mode=self.throttle_mode,
+            task_type=self.task_type,
+            loiter_centers=self.loiter_centers,
+            loiter_entry=self.loiter_entry,
+            loiter_exit=self.loiter_exit,
+            loiter_radius=self.loiter_radius,
+            loiter_directions=self.loiter_directions,
+            loiter_sweep_rad=self.loiter_sweep_rad,
         )
 
     def _record(self, t: float, obs: ControlObservation, command,
