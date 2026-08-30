@@ -104,100 +104,85 @@ def racetrack_path(
     return np.stack([pts[:, 0], pts[:, 1], alt], axis=1)
 
 
-def figure8_tangent_path(
+def figure8_spatial_path(
     center_ne: tuple[float, float],
     radius: float,
     altitude: float,
     n_pts: int = 1441,
-    center_dist: float | None = None,
+    center_dist: float = 400.0,
+    center_dh: float = 10.0,
     climb_rate: float = 0.0,
     airspeed: float = 16.0,
 ) -> np.ndarray:
-    """双圆切线相接 8 字航迹 [N,3]（两个圆 + 上切线连接段，往返成闭合 8 字）。
+    """空间 8 字航迹 [N,3]（NEU）：两个大圆弧 + 两条公切线，全路径连续。
 
-    - 圆 A：中心 (cx - D/2, cy)，顺时针整圈，起点/终点在其正上方切点
-      （顺时针在切点处速度朝北，与上切线段连续）；
-    - 上切线段：从 A 正上方到 B 正上方（长度 D，两圆等半径时外公切线
-      平行于圆心连线）；
-    - 圆 B：中心 (cx + D/2, cy)，顺时针整圈；
-    - 上切线段返回 A，闭合（每圈仅 B 出口一次掉头）。
+    几何（WP2A-8 v4 修正）：
+    - 左圆（A）圆心 (cx-D/2, cy)，高度 H+5；右圆（B）圆心 (cx+D/2, cy)，
+      高度 H-5（左圆高于右圆，高度差 center_dh=10 m）；
+    - 每圆两个切点：上端点 = 圆心 +5 m 高度，下端点 = 圆心 -5 m 高度；
+      切点方位角 α = acos(2R/D)（内公切线几何，保证切线与圆相切且接点
+      切向连续）；
+    - 切线 1：A 上端点 (H+10) → B 下端点 (H-10)（俯冲 20 m）；
+    - 切线 2：B 上端点 (H) → A 下端点 (H)（水平，穿过两圆之间）；
+    - A 大弧：A 下端点顺时针绕 312.8° 到 A 上端点（螺旋爬升 10 m）；
+    - B 大弧：B 下端点逆时针绕 312.8° 到 B 上端点（螺旋爬升 10 m）；
+    - 遍历顺序：切线1 → B 大弧 → 切线2 → A 大弧 → 切线1 闭合，
+      各接点切向一致（无尖点）。
 
-    center_dist=D 默认 2R（两圆相切于中点）。R 与 D 均放大后，采样偏差
-    对航迹跟踪的影响显著减小（对应 WP2A-8 品质试验问题整改）。
+    切线 1/2 在水平投影上为 X 形，中点 (0,0) 处空间交于一点 (0,0,H)
+    （对称内公切线的必然结果）；飞行沿时间顺序只经过一条切线，不影响跟踪。
     """
     cx, cy = center_ne
-    dist = 2.0 * radius if center_dist is None else float(center_dist)
-    circ = 2.0 * np.pi * radius
-    perimeter = 2.0 * circ + 2.0 * dist
+    h_center = altitude
+    half = center_dist / 2.0
+    ax, bx = cx - half, cx + half
+    h_a, h_b = h_center + center_dh / 2.0, h_center - center_dh / 2.0
+    alpha = np.arccos(np.clip(2.0 * radius / center_dist, 0.0, 1.0))
+    r_cos, r_sin = radius * np.cos(alpha), radius * np.sin(alpha)
+
+    # 四个切点（NEU 水平 + 高度）
+    a_upper = np.array([ax + r_cos, cy + r_sin, h_a + 5.0])
+    a_lower = np.array([ax + r_cos, cy - r_sin, h_a - 5.0])
+    b_upper = np.array([bx - r_cos, cy + r_sin, h_b + 5.0])
+    b_lower = np.array([bx - r_cos, cy - r_sin, h_b - 5.0])
+
+    t1 = b_lower - a_upper                      # 切线 1（俯冲）
+    t2 = a_lower - b_upper                      # 切线 2（水平）
+    len1 = float(np.linalg.norm(t1))
+    len2 = float(np.linalg.norm(t2))
+    sweep = 2.0 * np.pi - 2.0 * alpha           # 大弧扫角
+    arc_len = sweep * radius                    # 单段大弧长
+    perimeter = len1 + len2 + 2.0 * arc_len
     s = np.linspace(0.0, perimeter, n_pts)
 
-    ax, bx = cx - dist / 2.0, cx + dist / 2.0
+    # 分段累计弧长
+    s1 = len1
+    s2 = len1 + arc_len                         # B 大弧结束
+    s3 = len1 + arc_len + len2                  # 切线 2 结束
 
-    def point_at(d: float) -> np.ndarray:
-        d = d % perimeter
-        if d < circ:  # 圆 A 顺时针（起点正上方，θ=π/2 递减）
-            theta = np.pi / 2.0 - d / radius
-            return np.array([ax + radius * np.cos(theta),
-                             cy + radius * np.sin(theta)])
-        if d < circ + dist:  # 上切线 A→B
-            f = (d - circ) / dist
-            return np.array([ax + (bx - ax) * f, cy + radius])
-        if d < 2.0 * circ + dist:  # 圆 B 顺时针（起点正上方，θ=π/2 递减）
-            theta = np.pi / 2.0 - (d - circ - dist) / radius
-            return np.array([bx + radius * np.cos(theta),
-                             cy + radius * np.sin(theta)])
-        # 上切线 B→A
-        f = (d - 2.0 * circ - dist) / dist
-        return np.array([bx + (ax - bx) * f, cy + radius])
+    pts = np.empty((n_pts, 3))
+    mask_t1 = s <= len1
+    mask_b = (s > len1) & (s <= s2)
+    mask_t2 = (s > s2) & (s <= s3)
+    mask_a = s > s3
 
-    pts = np.array([point_at(d) for d in s])
-    lap_time = perimeter / max(airspeed, 1e-3)
-    t = s / perimeter * lap_time
-    alt = altitude + climb_rate * t
-    return np.stack([pts[:, 0], pts[:, 1], alt], axis=1)
-
-
-def figure8_loiter_segments(
-    center_ne: tuple[float, float], radius: float,
-    center_dist: float | None = None,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, float]:
-    """双圆切线 8 字 → loiter 切圆段解析。
-
-    返回 (centers [2,2], entries [2,2], exits [2,2], directions [2],
-    sweeps [2], radius)。段 0：圆 A 逆时针整圈（入口=出口=顶部切点）；
-    段 1：圆 B 顺时针整圈；两段之间由顶部公切线直飞连接。
-    """
-    cx, cy = center_ne
-    dist = 2.0 * radius if center_dist is None else float(center_dist)
-    ax, bx = cx - dist / 2.0, cx + dist / 2.0
-    centers = np.array([[ax, cy], [bx, cy]], dtype=np.float64)
-    entries = np.array([[ax, cy + radius], [bx, cy + radius]], dtype=np.float64)
-    exits = entries.copy()  # 整圈：出口 = 入口（顶部切点）
-    directions = np.array([-1.0, -1.0], dtype=np.float64)  # 均顺时针（切点速度朝北）
-    sweeps = np.array([2.0 * np.pi, 2.0 * np.pi], dtype=np.float64)
-    return centers, entries, exits, directions, sweeps, float(radius)
-
-
-def racetrack_loiter_segments(
-    center_ne: tuple[float, float], straight: float, radius: float,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, float]:
-    """跑马场 → loiter 切圆段解析。
-
-    返回 (centers [2,2], entries [2,2], exits [2,2], directions [2],
-    sweeps [2], radius)。段 0：北半圆（西端入口，顺时针经顶部到东端出口，
-    扫 π）；段 1：南半圆（东端入口，顺时针经底部到西端出口，扫 π）。
-    直飞段自动落在两半圆的切线（东/西直线）上。
-    """
-    cx, cy = center_ne
-    half = straight / 2.0
-    centers = np.array([[cx + half, cy], [cx - half, cy]], dtype=np.float64)
-    entries = np.array([[cx + half, cy - radius],
-                        [cx - half, cy + radius]], dtype=np.float64)
-    exits = np.array([[cx + half, cy + radius],
-                      [cx - half, cy - radius]], dtype=np.float64)
-    directions = np.array([1.0, 1.0], dtype=np.float64)  # 北/南半圆均逆时针
-    sweeps = np.array([np.pi, np.pi], dtype=np.float64)
-    return centers, entries, exits, directions, sweeps, float(radius)
+    # 切线 1：A_upper → B_lower
+    pts[mask_t1] = a_upper + (s[mask_t1] / len1)[:, None] * t1
+    # B 大弧：逆时针从 π+α 扫到 π-α+2π，高度 hB-5 → hB+5
+    u = (s[mask_b] - len1) / arc_len
+    theta = np.pi + alpha + sweep * u
+    pts[mask_b, 0] = bx + radius * np.cos(theta)
+    pts[mask_b, 1] = cy + radius * np.sin(theta)
+    pts[mask_b, 2] = h_b - 5.0 + 10.0 * u
+    # 切线 2：B_upper → A_lower（水平）
+    pts[mask_t2] = b_upper + ((s[mask_t2] - s2) / len2)[:, None] * t2
+    # A 大弧：顺时针从 -α 扫到 -2π+α，高度 hA-5 → hA+5
+    u = (s[mask_a] - s3) / arc_len
+    theta = -alpha - sweep * u
+    pts[mask_a, 0] = ax + radius * np.cos(theta)
+    pts[mask_a, 1] = cy + radius * np.sin(theta)
+    pts[mask_a, 2] = h_a - 5.0 + 10.0 * u
+    return pts
 
 
 def build_task_path(cfg: dict, n_pts: int = 721) -> np.ndarray:
@@ -214,10 +199,11 @@ def build_task_path(cfg: dict, n_pts: int = 721) -> np.ndarray:
             direction=int(cfg.get("direction", 1)), airspeed=airspeed,
         )
     if task_type == "figure8":
-        # 双圆切线相接 8 字（figure8_tangent_path）
-        return figure8_tangent_path(
+        # 空间 8 字（两个大弧 + 两条错高公切线）
+        return figure8_spatial_path(
             center, float(cfg.get("radius_m", 80.0)), altitude,
-            center_dist=float(cfg.get("center_dist_m", 2.0 * cfg.get("radius_m", 80.0))),
+            center_dist=float(cfg.get("center_dist_m", 400.0)),
+            center_dh=float(cfg.get("center_dh_m", 10.0)),
             n_pts=n_pts, climb_rate=climb, airspeed=airspeed,
         )
     if task_type == "racetrack":

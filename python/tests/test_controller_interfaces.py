@@ -1,12 +1,18 @@
 """python 包级测试（Phase 2a，接口层单测）。
 
 覆盖：controller 数据结构、PID 张量解算、串级内环符号/限幅、
-NPFG 圆检测与风三角、wind stub 坐标符号约定。
+NPFG 圆检测与风三角、wind stub 坐标符号约定、空间 8 字路径几何。
 """
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 import numpy as np
+
+# 与解释器无关的项目根路径引导（不依赖 CWD/PYTHONPATH）
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from python.controller.pid import PID
 from python.controller.inner import InnerLoop
@@ -190,6 +196,28 @@ def test_l1_npfg_wind_triangle() -> None:
     assert np.abs(np.arctan2(ground_dir[1], ground_dir[0])) < 0.05
 
 
+def test_figure8_spatial_path_geometry() -> None:
+    """空间 8 字路径：高度 ±10（左圆高、右圆低）、无尖点、闭合。"""
+    from python.simulation.task_route import figure8_spatial_path
+
+    f8 = figure8_spatial_path((0.0, 0.0), 80.0, 1000.0, n_pts=1441,
+                              center_dist=400.0, center_dh=10.0)
+    # 高度范围：H-10 ~ H+10（采样略过端点，容差放宽）
+    assert abs(f8[:, 2].max() - 1010.0) < 0.1
+    assert abs(f8[:, 2].min() - 990.0) < 0.1
+    # 水平范围：圆心 ±(200+80)
+    assert abs(f8[:, 0].max() - 280.0) < 0.5
+    assert abs(f8[:, 0].min() + 280.0) < 0.5
+    # 闭合：首尾接近（起点 A_upper 结束点 A_upper）
+    assert np.linalg.norm(f8[0] - f8[-1]) < 1.5
+    # 无尖点：相邻段方向变化 < 10°
+    d = np.diff(f8, axis=0)
+    seg = np.linalg.norm(d, axis=1)
+    dirs = d / seg[:, None]
+    cosang = np.sum(dirs[1:] * dirs[:-1], axis=1)
+    assert cosang.min() > np.cos(np.deg2rad(10.0))
+
+
 if __name__ == "__main__":
     test_pid_tensorized()
     test_pid_snapshot_roundtrip()
@@ -200,4 +228,5 @@ if __name__ == "__main__":
     test_inner_limits()
     test_l1_circle_detection_and_guidance()
     test_l1_npfg_wind_triangle()
+    test_figure8_spatial_path_geometry()
     print("python package unit tests passed")

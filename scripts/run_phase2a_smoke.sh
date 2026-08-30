@@ -15,17 +15,17 @@ if [[ ! -f "$LIB" ]]; then
 fi
 
 echo "=== [1/4] fixedwing 依赖审计（无 MATLAB） ==="
-python3 tests/regression/test_portable_bundle.py
+command python3 tests/regression/test_portable_bundle.py
 
 echo "=== [2/4] 20s 逐样本回归 ==="
-python3 tests/regression/test_ctypes_20s.py --library "$LIB" --seconds 20 --print-every 5
+command python3 tests/regression/test_ctypes_20s.py --library "$LIB" --seconds 20 --print-every 5
 
 echo "=== [3/4] 多实例并行正确性 ==="
-python3 tests/regression/test_ctypes_parallel.py \
+command python3 tests/regression/test_ctypes_parallel.py \
     --library "$LIB" --instances 16 --seconds 20 --workers 16
 
 echo "=== [4/4] 生命周期压力测试 ==="
-python3 tests/regression/test_ctypes_lifecycle.py \
+command python3 tests/regression/test_ctypes_lifecycle.py \
     --library "$LIB" --warmup 1000 --cycles 5000
 
 echo "=== Phase 2a 冒烟测试全部通过 ==="

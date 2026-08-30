@@ -8,10 +8,10 @@
 # 控制器不编译 .so，纯 Python 张量实现，可对 B 个实例一次解算。
 # 数值来自 WP2A-8 限定记忆 GA 整定（experiments/wp2a8/）：
 #   tuning_02_attitude_cascade_ga（串级内环姿态跟踪）
-#   tuning_03_outer_circle_ga（外环 NPFG/TECS 盘旋闭环）
+#   tuning_04_multitask_ga（三任务联合：盘旋 loiter + 空间 8 字 + 跑马场 NPFG）
 
 controller:
-  name: px4_cascade_npfg_tecs_v01
+  name: px4_cascade_npfg_tecs_v02
   outer_rate_hz: 20        # 外环更新频率（NPFG/TECS/协调转弯）
   inner_rate_hz: 50        # 内环更新频率，与 plant 同频
   batch_compatible: true   # 全张量化，无逐实例 Python 循环
@@ -44,31 +44,31 @@ inner:
 outer:
   l1:                      # NPFG 制导（PX4 参数化）
     npfg_enabled: true
-    period_s: 20.0         # 先调 period（越小转弯越急）
-    damping: 0.863         # 0.65~0.85，步长 0.05
+    period_s: 11.91        # 先调 period（越小转弯越急）
+    damping: 0.619         # 0.65~0.85，步长 0.05
     l1_dist_min_m: 20.0
     l1_dist_max_m: 300.0
     a_cmd_limit_mps2: 15.0
-    circle_kr: 1.5         # PX4 Circle 径向误差增益
-    circle_kv: 1.581       # PX4 Circle 径向速度阻尼
+    circle_kr: 0.697       # PX4 Circle 径向误差增益
+    circle_kv: 0.923       # PX4 Circle 径向速度阻尼
   coordinated_turn:
-    bank_limit_deg: 30.0
+    bank_limit_deg: 35.0
     bank_rate_limit_degps: 15.0
     dt: 0.02
   tecs:                    # 总能量控制
     dt: 0.02
-    throttle_trim: 0.533
-    theta_trim_deg: -1.526
-    energy_kp: 0.608       # STE_err → 能量变化率需求
-    throttle_kp: 0.361
-    throttle_ki: 0.460
-    airspeed_kp: 1.0       # V_err → V̇_sp
-    airspeed_ki: 0.232
-    height_kp: 0.166       # h_err → climb_sp
-    balance_kp: 1.156      # 能量分配误差 → θ
-    balance_ki: 0.889
-    gamma_ff_gain: 0.718   # γ_sp 前馈
-    bank_comp_gain: 0.719  # 转弯升力补偿 (1/cosφ - 1) 系数
+    throttle_trim: 0.524
+    theta_trim_deg: 7.098
+    energy_kp: 1.0         # STE_err → 能量变化率需求
+    throttle_kp: 1.112
+    throttle_ki: 0.134
+    airspeed_kp: 0.904     # V_err → V̇_sp
+    airspeed_ki: 0.194
+    height_kp: 0.232       # h_err → climb_sp
+    balance_kp: 3.080      # 能量分配误差 → θ
+    balance_ki: 0.137
+    gamma_ff_gain: 0.771   # γ_sp 前馈
+    bank_comp_gain: 0.502  # 转弯升力补偿 (1/cosφ - 1) 系数
     climb_sp_limit_mps: 5.0
     gamma_limit_deg: 20.0
     v_dot_limit_mps2: 3.0

@@ -1,0 +1,93 @@
+{
+  "config": {
+    "inner_source": "tuning_02_attitude_cascade_ga/result.json",
+    "outer_source": "tuning_03_outer_circle_ga/result.json"
+  },
+  "note": "试验 A（NPFG 采样路径）与 B（loiter 切圆 setpoint）均未调整参数；8 字 R80/圆心距400（双圆切线相接，公切线过起点）、跑马场 R80/L400（长轴沿北、圆弧外凸修复，起点在直线段切向）。",
+  "trials": [
+    {
+      "trial": "T11_circle",
+      "duration_s": 119.98,
+      "cross_mae_m": 0.1847782916301017,
+      "cross_rmse_m": 0.1847783028164058,
+      "alt_rmse_m": 0.0017455216831612995,
+      "tas_rmse_mps": 0.0010511133186856057,
+      "phi_mae_deg": 0.7755218072944227,
+      "theta_mae_deg": 1.002097765526581,
+      "v_body_mae_mps": 0.12037413060502886,
+      "w_body_mae_mps": 0.2645670483481816,
+      "max_phi_deg": 31.251619380187464,
+      "nan": false
+    },
+    {
+      "trial": "T11b_circle_wind",
+      "duration_s": 119.98,
+      "cross_mae_m": 0.21426103970108626,
+      "cross_rmse_m": 0.22375284990672925,
+      "alt_rmse_m": 2.3025090484243704,
+      "tas_rmse_mps": 0.35420490149522177,
+      "phi_mae_deg": 0.7503939940169896,
+      "theta_mae_deg": 2.034916093356247,
+      "v_body_mae_mps": 1.7200931809117164,
+      "w_body_mae_mps": 0.7813287932474288,
+      "max_phi_deg": 30.8520292529662,
+      "nan": false
+    },
+    {
+      "trial": "T12A_figure8_npfg",
+      "duration_s": 179.98,
+      "cross_mae_m": 34.02618149308615,
+      "cross_rmse_m": 41.13863761371325,
+      "alt_rmse_m": 0.2170089973117552,
+      "tas_rmse_mps": 0.12542275703835365,
+      "phi_mae_deg": 4.038884481516622,
+      "theta_mae_deg": 0.3824702169821816,
+      "v_body_mae_mps": 1.233028407684129,
+      "w_body_mae_mps": 0.318969222258919,
+      "max_phi_deg": 41.98478920593152,
+      "nan": false
+    },
+    {
+      "trial": "T12B_figure8_loiter",
+      "duration_s": 179.98,
+      "cross_mae_m": 38.01732532330512,
+      "cross_rmse_m": 45.509832297270144,
+      "alt_rmse_m": 1.4530598931904821,
+      "tas_rmse_mps": 0.8819987511869067,
+      "phi_mae_deg": 20.769354297217625,
+      "theta_mae_deg": 11.381135637100199,
+      "v_body_mae_mps": 6.147081088914835,
+      "w_body_mae_mps": 0.6214906790352663,
+      "max_phi_deg": 67.25748661401147,
+      "nan": false
+    },
+    {
+      "trial": "T13A_racetrack_npfg",
+      "duration_s": 179.98,
+      "cross_mae_m": 12.180214554247662,
+      "cross_rmse_m": 17.271820196081784,
+      "alt_rmse_m": 0.14615944043867415,
+      "tas_rmse_mps": 0.08536244993025754,
+      "phi_mae_deg": 2.728166388383745,
+      "theta_mae_deg": 0.2087811219725176,
+      "v_body_mae_mps": 1.2297351246443837,
+      "w_body_mae_mps": 0.34161720172094895,
+      "max_phi_deg": 25.710578496613188,
+      "nan": false
+    },
+    {
+      "trial": "T13B_racetrack_loiter",
+      "duration_s": 179.98,
+      "cross_mae_m": 24.479907627693574,
+      "cross_rmse_m": 28.825352958944634,
+      "alt_rmse_m": 0.3354165682569418,
+      "tas_rmse_mps": 0.19738679281214686,
+      "phi_mae_deg": 8.82542381385958,
+      "theta_mae_deg": 0.7244483758210795,
+      "v_body_mae_mps": 2.3177560963123516,
+      "w_body_mae_mps": 0.2991159762700036,
+      "max_phi_deg": 43.143501501621664,
+      "nan": false
+    }
+  ]
+}
