@@ -1,0 +1,53 @@
+{
+  "config": {
+    "inner_source": "tuning_02_attitude_cascade_ga/result.json",
+    "outer_source": "tuning_04_multitask_ga/result.json"
+  },
+  "note": "v4：空间 8 字（两圆圆心高度差 10m、切点 ±5m 错高、双公切线全连续）、跑马场长轴沿北；loiter setpoint 导航已删除；图 5（体轴速度）删除，前 4 图融合为一张 2×2 图。",
+  "trials": [
+    {
+      "trial": "T11_circle",
+      "duration_s": 119.98,
+      "cross_mae_m": 0.7208290179778902,
+      "alt_rmse_m": 0.030270459597307803,
+      "tas_rmse_mps": 0.026417136139074843,
+      "phi_mae_deg": 2.0479486827657607,
+      "theta_mae_deg": 1.8484155367510866,
+      "max_phi_deg": 35.54901011990523,
+      "nan": false
+    },
+    {
+      "trial": "T11b_circle_wind",
+      "duration_s": 119.98,
+      "cross_mae_m": 0.6145786835651429,
+      "alt_rmse_m": 1.6886330421292057,
+      "tas_rmse_mps": 0.737503422341745,
+      "phi_mae_deg": 1.820858847227125,
+      "theta_mae_deg": 13.784539847997861,
+      "max_phi_deg": 35.262804746863026,
+      "nan": false
+    },
+    {
+      "trial": "T12_figure8_spatial",
+      "duration_s": 179.98,
+      "cross_mae_m": 17.396469805337375,
+      "alt_rmse_m": 0.1413748276232316,
+      "tas_rmse_mps": 0.09072741857861685,
+      "phi_mae_deg": 3.4996675141505063,
+      "theta_mae_deg": 2.141818418009255,
+      "max_phi_deg": 52.685118526466105,
+      "nan": false
+    },
+    {
+      "trial": "T13_racetrack",
+      "duration_s": 179.98,
+      "cross_mae_m": 2.343836526608002,
+      "alt_rmse_m": 0.07853080426016804,
+      "tas_rmse_mps": 0.05406944513189877,
+      "phi_mae_deg": 2.327537356367843,
+      "theta_mae_deg": 2.001766353923414,
+      "max_phi_deg": 18.56035815557709,
+      "nan": false
+    }
+  ]
+}

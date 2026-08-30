@@ -1,0 +1,99 @@
+{
+  "experiment": "tuning_04_multitask_ga",
+  "architecture": "px4_cascade + npfg/loiter + tecs",
+  "tasks": [
+    "circle(loiter)",
+    "figure8_spatial(npfg)",
+    "racetrack(npfg)"
+  ],
+  "inner_cfg_source": "experiments/wp2a8/tuning_02_attitude_cascade_ga/result.json",
+  "mu": 10,
+  "lambda": 10,
+  "generations": 20,
+  "seed": 20260830,
+  "elapsed_s": 3365.0320150852203,
+  "best_fitness": 5.730272915640053,
+  "genes": {
+    "l1_period_s": 11.913220346584133,
+    "l1_damping": 0.6186367698924958,
+    "throttle_trim": 0.5237112533716315,
+    "theta_trim_deg": 7.0983696063044786,
+    "energy_kp": 1.0,
+    "throttle_kp": 1.1119920447188176,
+    "throttle_ki": 0.13389141214391567,
+    "airspeed_kp": 0.9042222799367456,
+    "airspeed_ki": 0.19386159360418548,
+    "height_kp": 0.2317313800873304,
+    "balance_kp": 3.0803935854080358,
+    "balance_ki": 0.13667708184200086,
+    "gamma_ff_gain": 0.770883373712698,
+    "bank_comp_gain": 0.5024532250170033,
+    "circle_kr": 0.6965681996324362,
+    "circle_kv": 0.9225083326884499
+  },
+  "outer_cfg": {
+    "l1": {
+      "npfg_enabled": true,
+      "period_s": 11.913220346584133,
+      "damping": 0.6186367698924958,
+      "l1_dist_min_m": 20.0,
+      "l1_dist_max_m": 300.0,
+      "a_cmd_limit_mps2": 15.0,
+      "circle_kr": 0.6965681996324362,
+      "circle_kv": 0.9225083326884499
+    },
+    "coordinated_turn": {
+      "bank_limit_deg": 35.0,
+      "bank_rate_limit_degps": 15.0,
+      "dt": 0.02
+    },
+    "tecs": {
+      "dt": 0.02,
+      "throttle_trim": 0.5237112533716315,
+      "theta_trim_deg": 7.0983696063044786,
+      "energy_kp": 1.0,
+      "throttle_kp": 1.1119920447188176,
+      "throttle_ki": 0.13389141214391567,
+      "airspeed_kp": 0.9042222799367456,
+      "airspeed_ki": 0.19386159360418548,
+      "height_kp": 0.2317313800873304,
+      "balance_kp": 3.0803935854080358,
+      "balance_ki": 0.13667708184200086,
+      "gamma_ff_gain": 0.770883373712698,
+      "bank_comp_gain": 0.5024532250170033,
+      "climb_sp_limit_mps": 5.0,
+      "gamma_limit_deg": 20.0,
+      "v_dot_limit_mps2": 3.0,
+      "theta_limit_deg": 20.0,
+      "tas_derivative_tau": 0.2
+    }
+  },
+  "per_task_stats": {
+    "circle": {
+      "cross_mae_m": 0.7258528772450856,
+      "alt_rmse_m": 0.05557336712986282,
+      "tas_rmse_mps": 0.042720245240640574,
+      "nan": false
+    },
+    "figure8": {
+      "cross_mae_m": 15.874676677418652,
+      "alt_rmse_m": 0.15351034568512653,
+      "tas_rmse_mps": 0.09764904074583537,
+      "nan": false
+    },
+    "racetrack": {
+      "cross_mae_m": 2.2391442387674387,
+      "alt_rmse_m": 0.08293826515290323,
+      "tas_rmse_mps": 0.05680002144031835,
+      "nan": false
+    }
+  },
+  "batch_benchmark": {
+    "batch_size": 10,
+    "workers": 8,
+    "serial_wall_s": 123.45435705967247,
+    "parallel_wall_s": 159.18415641831234,
+    "speedup": 0.7755442491101485,
+    "sim_seconds_per_wall_second": 18.84609666879438
+  }
+}

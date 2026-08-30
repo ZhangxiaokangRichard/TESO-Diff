@@ -34,6 +34,7 @@ from .types import (  # noqa: F401
 )
 from .pid import PID  # noqa: F401
 from .avanti_controller import AvantiController  # noqa: F401
+from .controllerAPI import FlightController, LoiterCommand, HeadingCommand  # noqa: F401
 
 __all__ = [
     "ActuatorCommand",
@@ -41,4 +42,7 @@ __all__ = [
     "ControlReference",
     "PID",
     "AvantiController",
+    "FlightController",
+    "LoiterCommand",
+    "HeadingCommand",
 ]

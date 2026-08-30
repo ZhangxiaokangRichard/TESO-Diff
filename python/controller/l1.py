@@ -18,10 +18,9 @@ NPFG 改进（Stastny & Siegwart 2019，PX4 1.13+）：引入期望空速矢量�
     （向心加速度前馈 + 径向误差 PD，v_r = 地速在径向的投影）
     line_angle = 切向方向（供 NPFG 风三角），避免闭路参考点搜索歧义。
 
-figure8 / racetrack：loiter 切圆 setpoint 导航（WP2A-8 v3）：
-    航迹分解为 C 段“切圆 + 直飞”——远离圆心（>2R）直飞段入口点，
-    进入 2R 内 loiter 切圆，累计扫过 sweep 角后切下一段；
-    全部用 np.where 掩码状态机实现（无逐实例 if-else，GPU 可并行）。
+注：早期试验的 loiter 切圆 setpoint 导航（figure8/racetrack 用）已在小尺度
+轨迹上验证不适用，已删除（见 docs/build_logs/phase2_sp2.md 附录 B）。
+figure8/racetrack 统一使用 NPFG 采样路径制导。
 
 期望路径为闭合航迹（盘旋/8 字/跑马场）。
 全张量化，无逐实例 Python 循环；状态支持 snapshot（counterfactual）。
@@ -51,19 +50,11 @@ class L1Controller:
         # PX4 Circle（loiter）模式径向 PD 参数
         self.circle_kr = float(cfg.get("circle_kr", 0.3))
         self.circle_kv = float(cfg.get("circle_kv", 0.5))
-        # loiter 切圆 setpoint 导航状态（figure8/racetrack）
+        # 路径参考点索引（NPFG 采样制导状态）
         self._ref_index: Optional[np.ndarray] = None
-        self._seg_index: Optional[np.ndarray] = None
-        self._prev_bearing: Optional[np.ndarray] = None
-        self._cum_angle: Optional[np.ndarray] = None
-        self._near_mask: Optional[np.ndarray] = None
 
     def reset(self, batch: int) -> None:
         self._ref_index = np.zeros(batch, dtype=np.int64)
-        self._seg_index = np.zeros(batch, dtype=np.int64)
-        self._prev_bearing = None
-        self._cum_angle = np.zeros(batch)
-        self._near_mask = np.zeros(batch, dtype=bool)
 
     def _circle_params(self, path: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """检测圆形路径，返回 (centroid [B,2], radius [B], winding [B], is_circle [B])。"""
@@ -107,101 +98,6 @@ class L1Controller:
         v_cmd = np.asarray(ref.airspeed_cmd, dtype=np.float64).copy()
         return a_cmd, line_angle, cross_track, v_cmd
 
-    def _setpoint_loiter_step(
-        self, ref: ControlReference, obs: ControlObservation
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        """loiter 切圆 setpoint 导航（figure8 / racetrack，全张量化掩码状态机）。
-
-        每段：远离圆心（d > 2R）→ 直飞段入口点；进入 2R 内 → loiter 切圆
-        （径向 PD + 向心前馈），累计扫过 sweep 角后切下一段。
-        全部用 np.where 掩码实现，无逐实例 if-else（GPU 可并行）。
-        """
-        assert ref.loiter_centers is not None and ref.loiter_entry is not None
-        assert ref.loiter_radius is not None and ref.loiter_directions is not None
-        assert ref.loiter_sweep_rad is not None
-        exits = ref.loiter_exit if ref.loiter_exit is not None else ref.loiter_entry
-        batch = obs.u.shape[0]
-        n_seg = ref.loiter_centers.shape[1]
-        if (self._seg_index is None or self._seg_index.shape[0] != batch
-                or self._cum_angle is None):
-            self.reset(batch)
-        assert self._seg_index is not None and self._cum_angle is not None
-
-        pos = obs.neu_pos[:, :2]
-        vel = obs.neu_vel[:, :2]
-        gs = np.linalg.norm(vel, axis=1)
-        chi_gs = np.arctan2(vel[:, 1], vel[:, 0])
-        radius = ref.loiter_radius  # [B]
-
-        # 当前段参数（掩码聚集，无循环）
-        seg = self._seg_index
-        centers = ref.loiter_centers[np.arange(batch), seg]        # [B,2]
-        entries = ref.loiter_entry[np.arange(batch), seg]          # [B,2]
-        prev_exits = exits[np.arange(batch), (seg - 1) % n_seg]    # [B,2] 上一段出口
-        directions = ref.loiter_directions[np.arange(batch), seg]  # [B]
-        sweeps = ref.loiter_sweep_rad[np.arange(batch), seg]       # [B]
-
-        rel = pos - centers
-        dist = np.linalg.norm(rel, axis=1)
-        # 切入掩码带滞回：进入 2R 内切圆，退出需 > 2.6R（防边界振荡导致累计清零）
-        if self._near_mask is None or self._near_mask.shape[0] != batch:
-            self._near_mask = np.zeros(batch, dtype=bool)
-        near = (dist <= 2.0 * np.maximum(radius, 1e-3)) | (
-            self._near_mask & (dist <= 2.6 * np.maximum(radius, 1e-3))
-        )
-        self._near_mask = near
-
-        # ---- 切圆（near）：径向 PD + 向心前馈，切线方向供 NPFG ----
-        rel_safe = np.maximum(dist, 1e-3)
-        n_hat = rel / rel_safe[:, None]
-        tangent = directions[:, None] * np.stack([-n_hat[:, 1], n_hat[:, 0]], axis=1)
-        v_r = np.sum(vel * n_hat, axis=1)
-        cross_loiter = dist - radius
-        centrip = gs ** 2 / np.maximum(radius, 1.0)
-        # 径向修正限幅到 ±向心加速度：防止从 2R 外切入时指令饱和冲入圆内
-        # （稳态 e_r≈0 时修正≈0，GA 整定值仍完全生效）
-        corr = np.clip(self.circle_kr * cross_loiter + self.circle_kv * v_r,
-                       -centrip, centrip)
-        a_loiter = directions * (centrip + corr)
-        line_loiter = np.arctan2(tangent[:, 1], tangent[:, 0])
-
-        # ---- 直飞（far）：协调转弯对准段入口点前方切线上的虚拟目标 ----
-        # 虚拟目标 = 入口点 + 1.5R·入口处切线方向：使接近过程切向化，
-        # 进入 2R 时径向速度小，避免径向大幅振荡
-        rel_entry = entries - centers
-        tangent_entry = directions[:, None] * np.stack(
-            [-rel_entry[:, 1], rel_entry[:, 0]], axis=1
-        ) / np.maximum(np.linalg.norm(rel_entry, axis=1), 1e-3)[:, None]
-        fly_target = entries + 1.5 * radius[:, None] * tangent_entry
-        to_target = fly_target - pos
-        line_fly = np.arctan2(to_target[:, 1], to_target[:, 0])
-        # 协调转弯：横加速度与航向偏差成比例，限幅防切入前剧烈摆动
-        err_fly = np.clip(wrap_pi(line_fly - chi_gs), -np.pi / 3.0, np.pi / 3.0)
-        a_fly = np.clip(gs * 0.8 * err_fly, -8.0, 8.0)
-        # 横侧误差：到直飞段（上一出口 → 本段入口）直线的垂直距离
-        seg_vec = entries - prev_exits                       # [B,2]
-        seg_len = np.maximum(np.linalg.norm(seg_vec, axis=1), 1e-3)
-        w_vec = pos - prev_exits
-        cross_fly = np.abs(seg_vec[:, 0] * w_vec[:, 1] - seg_vec[:, 1] * w_vec[:, 0]) / seg_len
-
-        a_cmd = np.where(near, a_loiter, np.clip(a_fly, -self.a_cmd_limit, self.a_cmd_limit))
-        line_angle = np.where(near, line_loiter, line_fly)
-        cross_track = np.where(near, cross_loiter, cross_fly)
-
-        # ---- 段推进：仅在切圆模式累计方位角，扫够 sweep 切下一段 ----
-        bearing = np.arctan2(rel[:, 1], rel[:, 0])
-        if self._prev_bearing is None:
-            self._prev_bearing = bearing.copy()
-        d_bearing = wrap_pi(bearing - self._prev_bearing)
-        self._prev_bearing = bearing.copy()
-        cum = np.where(near, self._cum_angle + d_bearing, 0.0)
-        done = near & (np.abs(cum) >= np.maximum(sweeps, 1e-6))
-        self._seg_index = np.where(done, (seg + 1) % n_seg, seg)
-        self._cum_angle = np.where(done, 0.0, cum)
-
-        v_cmd = np.asarray(ref.airspeed_cmd, dtype=np.float64).copy()
-        return a_cmd, line_angle, cross_track, v_cmd
-
     def step(
         self, ref: ControlReference, obs: ControlObservation
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -213,10 +109,6 @@ class L1Controller:
         batch, n_pts, _ = path.shape
         pos = obs.neu_pos[:, :2]  # [B,2] 水平位置
         vel = obs.neu_vel[:, :2]  # [B,2] 水平地速
-
-        # figure8 / racetrack：loiter 切圆 setpoint 导航（WP2A-8 v3）
-        if ref.task_type in ("figure8", "racetrack") and ref.loiter_centers is not None:
-            return self._setpoint_loiter_step(ref, obs)
 
         # 圆形任务：PX4 Circle（loiter）模式（闭路参考点搜索对圆有歧义）
         centroid, radius, winding, is_circle = self._circle_params(path)
@@ -312,37 +204,11 @@ class L1Controller:
         return a_cmd, chi_air, cross_track, v_cmd_out
 
     def get_snapshot(self) -> dict:
-        return {
-            "ref_index": None if self._ref_index is None
-            else self._ref_index.copy(),
-            "seg_index": None if self._seg_index is None
-            else self._seg_index.copy(),
-            "prev_bearing": None if self._prev_bearing is None
-            else self._prev_bearing.copy(),
-            "cum_angle": None if self._cum_angle is None
-            else self._cum_angle.copy(),
-            "near_mask": None if self._near_mask is None
-            else self._near_mask.copy(),
-        }
+        return {"ref_index": None if self._ref_index is None
+                else self._ref_index.copy()}
 
     def set_snapshot(self, snap: dict) -> None:
         self._ref_index = (
             None if snap["ref_index"] is None
             else np.array(snap["ref_index"], dtype=np.int64)
-        )
-        self._seg_index = (
-            None if snap["seg_index"] is None
-            else np.array(snap["seg_index"], dtype=np.int64)
-        )
-        self._prev_bearing = (
-            None if snap["prev_bearing"] is None
-            else np.array(snap["prev_bearing"], dtype=np.float64)
-        )
-        self._cum_angle = (
-            None if snap["cum_angle"] is None
-            else np.array(snap["cum_angle"], dtype=np.float64)
-        )
-        self._near_mask = (
-            None if snap.get("near_mask") is None
-            else np.array(snap["near_mask"], dtype=bool)
         )

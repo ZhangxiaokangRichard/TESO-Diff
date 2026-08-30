@@ -43,24 +43,10 @@ class ControlReference:
     throttle_mode: str = "auto"       # auto(TECS) | manual
     cT_cmd: Optional[np.ndarray] = None          # [B] 手动油门指令 [0,1]
 
-    # ---- loiter 切圆 setpoint 导航参数（WP2A-8 v3，figure8/racetrack 用）----
-    # 航迹被分解为 C 段“切圆 + 直飞”序列：远离圆心时直飞段入口点，
-    # 距圆心 <= 2R 用 loiter 切入；段扫过指定角度后切下一段
-    # （全张量化掩码状态机，无 if-else 逐实例分支）。
-    task_type: str = "path"           # path | circle | figure8 | racetrack
-    loiter_centers: Optional[np.ndarray] = None   # [B, C, 2] 圆心（NEU 水平）
-    loiter_entry: Optional[np.ndarray] = None     # [B, C, 2] 每段入口点（直飞目标）
-    loiter_exit: Optional[np.ndarray] = None      # [B, C, 2] 每段出口点（直飞段起点）
-    loiter_radius: Optional[np.ndarray] = None    # [B] 圆半径
-    loiter_directions: Optional[np.ndarray] = None  # [B, C] ±1（+1 逆时针）
-    loiter_sweep_rad: Optional[np.ndarray] = None   # [B, C] 每段要求扫过角度
-
     def __post_init__(self) -> None:
         batch = _check_batch(self.airspeed_cmd, self.altitude_cmd)
         if self.path.shape[0] != batch:
             raise ValueError("path batch mismatch")
-        if self.loiter_centers is not None and self.loiter_centers.shape[0] != batch:
-            raise ValueError("loiter_centers batch mismatch")
 
 
 @dataclass

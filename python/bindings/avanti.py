@@ -92,14 +92,19 @@ def default_library_path(project_root: Optional[Path] = None) -> Path:
     1. runtime/fixedwing/lib/ 中随项目分发的预构建产物；
     2. build/linux64/dist、build/win64/dist 中由根 CMakeLists 构建的产物。
     """
+    import sys
     root = project_root or Path(__file__).resolve().parents[2]
-    candidates = (
-        root / "runtime" / "fixedwing" / "lib" / "libavanti2.so",
-        root / "runtime" / "fixedwing" / "lib" / "avanti2.dll",
-        root / "build" / "linux64" / "dist" / "libavanti2.so",
-        root / "build" / "linux64" / "dist" / "avanti2.so",
-        root / "build" / "win64" / "dist" / "avanti2.dll",
-    )
+    if sys.platform == "win32":
+        candidates = (
+            root / "runtime" / "fixedwing" / "lib" / "avanti2.dll",
+            root / "build" / "win64" / "dist" / "avanti2.dll",
+        )
+    else:
+        candidates = (
+            root / "runtime" / "fixedwing" / "lib" / "libavanti2.so",
+            root / "build" / "linux64" / "dist" / "libavanti2.so",
+            root / "build" / "linux64" / "dist" / "avanti2.so",
+        )
     for candidate in candidates:
         if candidate.is_file():
             return candidate
