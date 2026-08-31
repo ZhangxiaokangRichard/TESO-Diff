@@ -3,44 +3,76 @@
     "inner_source": "tuning_02_attitude_cascade_ga/result.json",
     "outer_source": "tuning_04_multitask_ga/result.json"
   },
+<<<<<<< HEAD
   "note": "v4：空间 8 字（两圆圆心高度差 10m、切点 ±5m 错高、双公切线全连续）、跑马场长轴沿北；loiter setpoint 导航已删除；图 5（体轴速度）删除，前 4 图融合为一张 2×2 图。T14 = FlightController.command_loiter() 指点盘旋 400s；T15 = FlightController.command_heading() 平面 8 字航点跟踪 400s。",
+=======
+  "note": "v4：空间 8 字（两圆圆心高度差 10m、切点 ±5m 错高、双公切线全连续）、跑马场长轴沿北；loiter setpoint 导航已删除；图 5（体轴速度）删除，前 4 图融合为一张 2×2 图。",
+>>>>>>> c950170b05f376bf9386b115ad3552ab3a2684b8
   "trials": [
     {
       "trial": "T11_circle",
       "duration_s": 119.98,
+<<<<<<< HEAD
       "cross_mae_m": 0.7208290179779059,
       "alt_rmse_m": 0.03027045959729404,
       "tas_rmse_mps": 0.026417136139074655,
       "phi_mae_deg": 2.047948682765818,
       "theta_mae_deg": 1.84841553675111,
       "max_phi_deg": 35.549010119905226,
+=======
+      "cross_mae_m": 0.7208290179778902,
+      "alt_rmse_m": 0.030270459597307803,
+      "tas_rmse_mps": 0.026417136139074843,
+      "phi_mae_deg": 2.0479486827657607,
+      "theta_mae_deg": 1.8484155367510866,
+      "max_phi_deg": 35.54901011990523,
+>>>>>>> c950170b05f376bf9386b115ad3552ab3a2684b8
       "nan": false
     },
     {
       "trial": "T11b_circle_wind",
       "duration_s": 119.98,
+<<<<<<< HEAD
       "cross_mae_m": 0.6028910658662758,
       "alt_rmse_m": 1.6734365537415719,
       "tas_rmse_mps": 0.7363483290795675,
       "phi_mae_deg": 1.7830717993903646,
       "theta_mae_deg": 13.700060013485018,
       "max_phi_deg": 35.262804746863,
+=======
+      "cross_mae_m": 0.6145786835651429,
+      "alt_rmse_m": 1.6886330421292057,
+      "tas_rmse_mps": 0.737503422341745,
+      "phi_mae_deg": 1.820858847227125,
+      "theta_mae_deg": 13.784539847997861,
+      "max_phi_deg": 35.262804746863026,
+>>>>>>> c950170b05f376bf9386b115ad3552ab3a2684b8
       "nan": false
     },
     {
       "trial": "T12_figure8_spatial",
       "duration_s": 179.98,
+<<<<<<< HEAD
       "cross_mae_m": 17.396469805333044,
       "alt_rmse_m": 0.14137482762324532,
       "tas_rmse_mps": 0.09072741857861454,
       "phi_mae_deg": 3.499667514150967,
       "theta_mae_deg": 2.1418184180091995,
       "max_phi_deg": 52.68511852646602,
+=======
+      "cross_mae_m": 17.396469805337375,
+      "alt_rmse_m": 0.1413748276232316,
+      "tas_rmse_mps": 0.09072741857861685,
+      "phi_mae_deg": 3.4996675141505063,
+      "theta_mae_deg": 2.141818418009255,
+      "max_phi_deg": 52.685118526466105,
+>>>>>>> c950170b05f376bf9386b115ad3552ab3a2684b8
       "nan": false
     },
     {
       "trial": "T13_racetrack",
       "duration_s": 179.98,
+<<<<<<< HEAD
       "cross_mae_m": 2.343836526607849,
       "alt_rmse_m": 0.07853080426011257,
       "tas_rmse_mps": 0.054069445131876476,
@@ -69,6 +101,14 @@
       "phi_mae_deg": 18.45121150609582,
       "theta_mae_deg": 19.187251184984238,
       "max_phi_deg": 66.91828954948569,
+=======
+      "cross_mae_m": 2.343836526608002,
+      "alt_rmse_m": 0.07853080426016804,
+      "tas_rmse_mps": 0.05406944513189877,
+      "phi_mae_deg": 2.327537356367843,
+      "theta_mae_deg": 2.001766353923414,
+      "max_phi_deg": 18.56035815557709,
+>>>>>>> c950170b05f376bf9386b115ad3552ab3a2684b8
       "nan": false
     }
   ]

@@ -1,17 +1,26 @@
 #!/usr/bin/env python3
+<<<<<<< HEAD
 """WP2A-8 控制品质试验 v4（轨迹修正 + 多任务整定参数）+ T14/T15 API 层试验。
 
 v4 改动：
+=======
+"""WP2A-8 控制品质试验 v4（轨迹修正 + 多任务整定参数）。
+
+改动（v4）：
+>>>>>>> c950170b05f376bf9386b115ad3552ab3a2684b8
 1. 轨迹修正：8 字改为空间 8 字（两个大弧 + 两条错高公切线，全路径连续）；
    跑马场保持长轴沿北/圆弧外凸版本；
 2. 使用 tuning_04 三任务联合整定参数；
 3. 输出一张 2×2 融合图（航迹 / xyz 期望位置 / 体轴姿态角 / 体轴角速率）；
    删除原图 5（体轴速度：TECS 已把空速作为前馈指令，体轴速度无独立价值）；
 4. 旧试验图归档到 quality_trials/prevent_logs/。
+<<<<<<< HEAD
 
 T14/T15 新增（API 层）：
 - T14：FlightController.command_loiter() 指点盘旋，400 s；
 - T15：FlightController.command_heading() 航点 8 字，400 s。
+=======
+>>>>>>> c950170b05f376bf9386b115ad3552ab3a2684b8
 
 中文通过 mpl_style.setup_chinese_font() 保证无乱码。
 输出目录：experiments/wp2a8/quality_trials/
@@ -330,6 +339,7 @@ def main() -> int:
                         n_pts=1441, airspeed=16.0)
     run_and_plot("T13_racetrack", "跑马场 L=400/R=80（长轴沿北）",
                  rt, WindStub((0.0, 0.0, 0.0)), 180.0)
+<<<<<<< HEAD
 
     # ------------------------------------------------------------------
     # T14  指点盘旋（FlightController.command_loiter API）
@@ -383,6 +393,8 @@ def main() -> int:
     plot_trial("T15_api_heading_figure8", "FlightController 直飞接口 8 字（API Heading）",
                log15, wps, OUT_DIR / "trial_T15_api_heading_figure8.png")
     stats_all.append(stats_of("T15_api_heading_figure8", log15, 16.0))
+=======
+>>>>>>> c950170b05f376bf9386b115ad3552ab3a2684b8
 
     summary = {
         "config": {
@@ -391,9 +403,13 @@ def main() -> int:
         },
         "note": ("v4：空间 8 字（两圆圆心高度差 10m、切点 ±5m 错高、双公切线全连续）、"
                  "跑马场长轴沿北；loiter setpoint 导航已删除；"
+<<<<<<< HEAD
                  "图 5（体轴速度）删除，前 4 图融合为一张 2×2 图。"
                  "T14 = FlightController.command_loiter() 指点盘旋 400s；"
                  "T15 = FlightController.command_heading() 平面 8 字航点跟踪 400s。"),
+=======
+                 "图 5（体轴速度）删除，前 4 图融合为一张 2×2 图。"),
+>>>>>>> c950170b05f376bf9386b115ad3552ab3a2684b8
         "trials": stats_all,
     }
     (OUT_DIR / "summary.json").write_text(
