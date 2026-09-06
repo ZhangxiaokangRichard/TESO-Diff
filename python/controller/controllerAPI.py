@@ -42,6 +42,11 @@ _HEADING_N_PTS: int = 20          # 直飞模式前视路径点数
 _HEADING_PATH_DIST: float = 1000.0  # m，每步生成的前视路径总长度
 
 
+def _wrap_pi(angle):
+    """将标量或数组角度环绕到 [-pi, pi]。"""
+    return (angle + np.pi) % (2.0 * np.pi) - np.pi
+
+
 @dataclass
 class LoiterCommand:
     """指点盘旋指令。"""
@@ -58,6 +63,325 @@ class HeadingCommand:
     gamma: float       # 期望航迹倾角，rad（正为爬升）
     chi: float         # 期望航迹偏角，rad（从北顺时针）
     timestamp: float = 0.0  # 指令时间戳，s
+
+
+@dataclass(frozen=True)
+class PathFollowerStatus:
+    """PolylinePathFollower 最近一次更新的诊断状态。"""
+
+    segment_index: int
+    lap_count: int
+    progress_m: float
+    lookahead_m: float
+    signed_cross_track_m: float
+    target_neu: tuple[float, float, float]
+    chi_raw: float
+    chi_command: float
+    updated: bool
+
+
+class PolylinePathFollower:
+    """将连续采样路径转换为可长期保持的 HeadingCommand。
+
+    与“进入固定半径后切换单个航点”的逻辑不同，本类维护单调弧长进度，
+    将当前位置投影到上一进度附近的线段，并在路径弧长前方选择虚拟目标。
+    因此错过某个采样点不会卡住，在 8 字交叉点也不会跳到另一分支。
+
+    当前类对应单架 aircraft 对象；Phase 2b 可将相同状态扩展为 batch 张量。
+    """
+
+    def __init__(
+        self,
+        path: np.ndarray,
+        airspeed: float,
+        gamma: float = 0.0,
+        *,
+        closed: bool = True,
+        lookahead_time_s: float = 2.5,
+        lookahead_min_m: float = 30.0,
+        lookahead_max_m: float = 60.0,
+        cross_track_gain: float = 1.0,
+        heading_rate_limit_degps: float = 18.0,
+        update_period_s: float = 0.1,
+        search_back_segments: int = 2,
+        search_forward_segments: int = 20,
+        progress_rate_factor: float = 3.0,
+    ):
+        points = np.asarray(path, dtype=np.float64)
+        if points.ndim != 2 or points.shape[1] != 3 or points.shape[0] < 3:
+            raise ValueError("path must have shape [N,3] with N >= 3")
+        if not np.isfinite(points).all():
+            raise ValueError("path contains NaN/Inf")
+        if closed and np.linalg.norm(points[0] - points[-1]) < 1e-9:
+            points = points[:-1]
+        if points.shape[0] < 3:
+            raise ValueError("path has too few distinct points")
+        if airspeed <= 0.0:
+            raise ValueError("airspeed must be positive")
+        if lookahead_time_s <= 0.0 or lookahead_min_m <= 0.0:
+            raise ValueError("lookahead parameters must be positive")
+        if lookahead_max_m < lookahead_min_m:
+            raise ValueError("lookahead_max_m must be >= lookahead_min_m")
+        if update_period_s <= 0.0:
+            raise ValueError("update_period_s must be positive")
+
+        self.path = points
+        self.airspeed = float(airspeed)
+        self.gamma = float(gamma)
+        self.closed = bool(closed)
+        self.lookahead_time_s = float(lookahead_time_s)
+        self.lookahead_min_m = float(lookahead_min_m)
+        self.lookahead_max_m = float(lookahead_max_m)
+        self.cross_track_gain = float(cross_track_gain)
+        self.heading_rate_limit = float(np.deg2rad(heading_rate_limit_degps))
+        self.update_period_s = float(update_period_s)
+        self.search_back_segments = max(0, int(search_back_segments))
+        self.search_forward_segments = max(1, int(search_forward_segments))
+        self.progress_rate_factor = max(1.0, float(progress_rate_factor))
+
+        if self.closed:
+            p0 = points
+            p1 = np.roll(points, -1, axis=0)
+        else:
+            p0 = points[:-1]
+            p1 = points[1:]
+        self._seg_start = p0
+        self._seg_vec = p1 - p0
+        self._seg_len = np.linalg.norm(self._seg_vec[:, :2], axis=1)
+        if np.any(self._seg_len <= 1e-6):
+            raise ValueError("path contains a zero-length horizontal segment")
+        self._cum = np.concatenate(([0.0], np.cumsum(self._seg_len)))
+        self._total_len = float(self._cum[-1])
+        self._n_seg = len(self._seg_len)
+        self._max_seg_len = float(np.max(self._seg_len))
+
+        self._progress_m = 0.0
+        self._last_timestamp: Optional[float] = None
+        self._last_chi: Optional[float] = None
+        self._last_command: Optional[HeadingCommand] = None
+        self._status: Optional[PathFollowerStatus] = None
+
+    def reset(
+        self,
+        initial_segment: int = 0,
+        initial_chi: Optional[float] = None,
+        timestamp: Optional[float] = None,
+    ) -> None:
+        """重置路径进度；initial_segment 用于指定交叉路径的起始分支。"""
+        if not 0 <= initial_segment < self._n_seg:
+            raise ValueError("initial_segment out of range")
+        self._progress_m = float(self._cum[initial_segment])
+        self._last_timestamp = None if timestamp is None else float(timestamp)
+        self._last_chi = None if initial_chi is None else float(_wrap_pi(initial_chi))
+        self._last_command = None
+        self._status = None
+
+    def update(
+        self,
+        position_neu: np.ndarray,
+        timestamp: float,
+        ground_speed: Optional[float] = None,
+    ) -> HeadingCommand:
+        """根据当前 NEU 位置更新路径进度并返回 HeadingCommand。"""
+        pos = np.asarray(position_neu, dtype=np.float64)
+        if pos.shape != (3,) or not np.isfinite(pos).all():
+            raise ValueError("position_neu must be a finite [3] vector")
+        now = float(timestamp)
+        if self._last_timestamp is not None and now < self._last_timestamp - 1e-9:
+            raise ValueError("path follower timestamp moved backwards")
+
+        if (
+            self._last_timestamp is not None
+            and now - self._last_timestamp < self.update_period_s - 1e-9
+            and self._last_command is not None
+        ):
+            if self._status is not None:
+                self._status = PathFollowerStatus(
+                    **{**self._status.__dict__, "updated": False}
+                )
+            return self._last_command
+
+        dt = (
+            self.update_period_s
+            if self._last_timestamp is None
+            else max(now - self._last_timestamp, 1e-6)
+        )
+        speed = self.airspeed if ground_speed is None else max(float(ground_speed), 0.0)
+        lookahead = float(np.clip(
+            speed * self.lookahead_time_s,
+            self.lookahead_min_m,
+            self.lookahead_max_m,
+        ))
+
+        projection, tangent, progress = self._project_local(pos, speed, dt)
+        self._progress_m = progress
+        target = self._point_at(progress + lookahead)
+        chord = target[:2] - projection[:2]
+        if np.linalg.norm(chord) <= 1e-9:
+            chord = tangent
+        chi_path = float(np.arctan2(chord[1], chord[0]))
+
+        offset = pos[:2] - projection[:2]
+        signed_cross = float(tangent[0] * offset[1] - tangent[1] * offset[0])
+        correction = float(np.arctan2(
+            self.cross_track_gain * signed_cross,
+            max(lookahead, 1e-6),
+        ))
+        chi_raw = float(_wrap_pi(chi_path - correction))
+
+        if self._last_chi is None:
+            chi_command = chi_raw
+        else:
+            delta = float(_wrap_pi(chi_raw - self._last_chi))
+            max_delta = self.heading_rate_limit * dt
+            chi_command = float(_wrap_pi(
+                self._last_chi + np.clip(delta, -max_delta, max_delta)
+            ))
+
+        lap_count = int(np.floor(progress / self._total_len)) if self.closed else 0
+        progress_mod = progress % self._total_len if self.closed else progress
+        segment_index = int(
+            min(np.searchsorted(self._cum, progress_mod, side="right") - 1,
+                self._n_seg - 1)
+        )
+        self._last_timestamp = now
+        self._last_chi = chi_command
+        self._last_command = HeadingCommand(
+            airspeed=self.airspeed,
+            gamma=self.gamma,
+            chi=chi_command,
+            timestamp=now,
+        )
+        self._status = PathFollowerStatus(
+            segment_index=segment_index,
+            lap_count=lap_count,
+            progress_m=progress,
+            lookahead_m=lookahead,
+            signed_cross_track_m=signed_cross,
+            target_neu=(float(target[0]), float(target[1]), float(target[2])),
+            chi_raw=chi_raw,
+            chi_command=chi_command,
+            updated=True,
+        )
+        return self._last_command
+
+    def status(self) -> PathFollowerStatus:
+        if self._status is None:
+            raise RuntimeError("PolylinePathFollower.update() has not been called")
+        return self._status
+
+    def get_snapshot(self) -> dict:
+        """导出路径进度和航向限速状态，供分支 rollout 精确复现。"""
+        return {
+            "progress_m": self._progress_m,
+            "last_timestamp": self._last_timestamp,
+            "last_chi": self._last_chi,
+            "last_command": None if self._last_command is None else {
+                "airspeed": self._last_command.airspeed,
+                "gamma": self._last_command.gamma,
+                "chi": self._last_command.chi,
+                "timestamp": self._last_command.timestamp,
+            },
+            "status": None if self._status is None else dict(self._status.__dict__),
+        }
+
+    def set_snapshot(self, snap: dict) -> None:
+        """恢复由 get_snapshot() 导出的路径跟随器状态。"""
+        progress = float(snap["progress_m"])
+        if progress < 0.0 or (not self.closed and progress > self._total_len + 1e-9):
+            raise ValueError("snapshot progress outside path range")
+        self._progress_m = progress
+        self._last_timestamp = (
+            None if snap["last_timestamp"] is None
+            else float(snap["last_timestamp"])
+        )
+        self._last_chi = (
+            None if snap["last_chi"] is None else float(snap["last_chi"])
+        )
+        command = snap["last_command"]
+        self._last_command = (
+            None if command is None else HeadingCommand(**command)
+        )
+        status = snap["status"]
+        self._status = None if status is None else PathFollowerStatus(**status)
+
+    def _project_local(
+        self,
+        pos: np.ndarray,
+        speed: float,
+        dt: float,
+    ) -> tuple[np.ndarray, np.ndarray, float]:
+        """在受限的前向弧长窗口内投影，避免错点、倒退和交叉串支。"""
+        progress_mod = self._progress_m % self._total_len if self.closed else self._progress_m
+        current_idx = int(min(
+            np.searchsorted(self._cum, progress_mod, side="right") - 1,
+            self._n_seg - 1,
+        ))
+        current_lap = int(np.floor(self._progress_m / self._total_len)) if self.closed else 0
+        current_unwrapped = current_lap * self._n_seg + current_idx
+        max_advance = max(
+            self.progress_rate_factor * max(speed, self.airspeed * 0.5) * dt,
+            2.0 * self._max_seg_len,
+        )
+        min_progress = max(0.0, self._progress_m - self._max_seg_len)
+        max_progress = self._progress_m + max_advance
+
+        best = None
+        for offset_idx in range(-self.search_back_segments,
+                                self.search_forward_segments + 1):
+            unwrapped_idx = current_unwrapped + offset_idx
+            if not self.closed and not 0 <= unwrapped_idx < self._n_seg:
+                continue
+            idx = unwrapped_idx % self._n_seg
+            lap = int(np.floor(unwrapped_idx / self._n_seg)) if self.closed else 0
+            seg_start_progress = lap * self._total_len + self._cum[idx]
+            vec_xy = self._seg_vec[idx, :2]
+            length = self._seg_len[idx]
+            t = float(np.clip(
+                np.dot(pos[:2] - self._seg_start[idx, :2], vec_xy)
+                / (length * length),
+                0.0,
+                1.0,
+            ))
+            candidate_progress = seg_start_progress + t * length
+            if candidate_progress < min_progress - 1e-9:
+                continue
+            if candidate_progress > max_progress + 1e-9:
+                continue
+            candidate = self._seg_start[idx] + t * self._seg_vec[idx]
+            distance_sq = float(np.sum((candidate[:2] - pos[:2]) ** 2))
+            key = (distance_sq, -candidate_progress)
+            if best is None or key < best[0]:
+                tangent = vec_xy / length
+                best = (key, candidate, tangent, candidate_progress)
+
+        if best is None:
+            progress = self._progress_m
+            point, tangent = self._point_and_tangent(progress)
+            return point, tangent, progress
+
+        progress = max(self._progress_m, float(best[3]))
+        point, tangent = self._point_and_tangent(progress)
+        return point, tangent, progress
+
+    def _point_and_tangent(self, progress_m: float) -> tuple[np.ndarray, np.ndarray]:
+        if self.closed:
+            s = progress_m % self._total_len
+        else:
+            s = float(np.clip(progress_m, 0.0, self._total_len))
+        idx = int(min(
+            np.searchsorted(self._cum, s, side="right") - 1,
+            self._n_seg - 1,
+        ))
+        t = float(np.clip(
+            (s - self._cum[idx]) / self._seg_len[idx], 0.0, 1.0
+        ))
+        point = self._seg_start[idx] + t * self._seg_vec[idx]
+        tangent = self._seg_vec[idx, :2] / self._seg_len[idx]
+        return point, tangent
+
+    def _point_at(self, progress_m: float) -> np.ndarray:
+        return self._point_and_tangent(progress_m)[0]
 
 
 class FlightController:

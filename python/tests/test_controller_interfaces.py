@@ -15,6 +15,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from python.controller.pid import PID
+from python.controller.controllerAPI import PolylinePathFollower
 from python.controller.inner import InnerLoop
 from python.controller.l1 import L1Controller
 from python.controller.types import (
@@ -218,6 +219,75 @@ def test_figure8_spatial_path_geometry() -> None:
     assert cosang.min() > np.cos(np.deg2rad(10.0))
 
 
+def test_polyline_path_follower_lookahead_and_rate_limit() -> None:
+    """路径适配器使用前视点，且 Heading 指令按配置限速。"""
+    north = np.linspace(0.0, 200.0, 41)
+    path = np.stack([north, np.zeros_like(north), np.full_like(north, 1000.0)], axis=1)
+    follower = PolylinePathFollower(
+        path, airspeed=16.0, closed=False,
+        lookahead_time_s=2.5, heading_rate_limit_degps=18.0,
+        update_period_s=0.1,
+    )
+    follower.reset(initial_segment=0, initial_chi=0.0)
+    command = follower.update(
+        np.array([0.0, 20.0, 1000.0]), timestamp=0.0, ground_speed=16.0
+    )
+    status = follower.status()
+    # 飞机位于路径左侧（East +），指令应向右修正；首步不超过 1.8 deg。
+    assert command.chi < 0.0
+    assert abs(command.chi) <= np.deg2rad(1.8) + 1e-9
+    assert 39.9 <= status.lookahead_m <= 40.1
+    assert status.signed_cross_track_m > 19.0
+
+    held = follower.update(
+        np.array([0.2, 19.8, 1000.0]), timestamp=0.02, ground_speed=16.0
+    )
+    assert held == command
+    assert not follower.status().updated
+
+
+def test_polyline_path_follower_crossing_branch_and_progress() -> None:
+    """8 字交叉点保持起始分支，弧长进度不跳支、不倒退。"""
+    cx, cy, radius = 200.0, 0.0, 80.0
+    theta_l = np.linspace(0.0, 2.0 * np.pi, 100, endpoint=False)
+    theta_r = np.linspace(np.pi, -np.pi, 100, endpoint=False)
+    path = np.stack([
+        np.concatenate([(cx - radius) + radius * np.cos(theta_l),
+                        (cx + radius) + radius * np.cos(theta_r)]),
+        np.concatenate([cy + radius * np.sin(theta_l),
+                        cy + radius * np.sin(theta_r)]),
+        np.full(200, 1000.0),
+    ], axis=1)
+    follower = PolylinePathFollower(path, airspeed=16.0, closed=True)
+    follower.reset(initial_segment=0, initial_chi=0.0)
+
+    follower.update(np.array([200.0, 0.0, 1000.0]), 0.0, 16.0)
+    first = follower.status().progress_m
+    follower.update(np.array([199.5, 2.0, 1000.0]), 0.1, 16.0)
+    second = follower.status().progress_m
+
+    assert second >= first
+    # 两个分支都通过该点，但单次进度不得跳到约半圈后的另一分支。
+    assert second - first < 12.0
+    assert follower.status().segment_index < 5
+
+
+def test_polyline_path_follower_snapshot_roundtrip() -> None:
+    north = np.linspace(0.0, 100.0, 21)
+    path = np.stack([north, np.zeros_like(north), np.full_like(north, 1000.0)], axis=1)
+    follower = PolylinePathFollower(path, airspeed=16.0, closed=False)
+    follower.reset(initial_chi=0.0)
+    follower.update(np.array([5.0, 3.0, 1000.0]), 0.0, 16.0)
+    snapshot = follower.get_snapshot()
+    expected = follower.update(np.array([7.0, 2.0, 1000.0]), 0.1, 16.0)
+    expected_status = follower.status()
+    follower.set_snapshot(snapshot)
+    actual = follower.update(np.array([7.0, 2.0, 1000.0]), 0.1, 16.0)
+    actual_status = follower.status()
+    assert actual == expected
+    assert actual_status == expected_status
+
+
 if __name__ == "__main__":
     test_pid_tensorized()
     test_pid_snapshot_roundtrip()
@@ -229,4 +299,7 @@ if __name__ == "__main__":
     test_l1_circle_detection_and_guidance()
     test_l1_npfg_wind_triangle()
     test_figure8_spatial_path_geometry()
+    test_polyline_path_follower_lookahead_and_rate_limit()
+    test_polyline_path_follower_crossing_branch_and_progress()
+    test_polyline_path_follower_snapshot_roundtrip()
     print("python package unit tests passed")
