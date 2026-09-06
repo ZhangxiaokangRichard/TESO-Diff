@@ -1,0 +1,35 @@
+{
+  "controller": {
+    "inner_source": "tuning_02_attitude_cascade_ga/result.json",
+    "outer_source": "tuning_04_multitask_ga/result.json"
+  },
+  "path_follower": {
+    "method": "local segment projection + monotonic arc progress + arc lookahead",
+    "dubins": false,
+    "lookahead_time_s": 2.5,
+    "lookahead_min_m": 35.0,
+    "lookahead_max_m": 55.0,
+    "cross_track_gain": 1.0,
+    "heading_rate_limit_degps": 18.0,
+    "update_period_s": 0.1
+  },
+  "trial": {
+    "trial": "T15_api_heading_figure8_adaptive",
+    "duration_s": 399.98,
+    "cross_mae_m": 2.469946620776376,
+    "alt_rmse_m": 0.9947366419035252,
+    "tas_rmse_mps": 0.026052785296265965,
+    "phi_mae_deg": 5.938177792701908,
+    "theta_mae_deg": 1.8821657801075224,
+    "max_phi_deg": 45.51740666809948,
+    "nan": false,
+    "completed_laps": 6,
+    "final_progress_m": 6755.5799119882095,
+    "progress_monotonic": true,
+    "lookahead_mean_m": 40.00856153632465,
+    "chi_update_rate_max_degps": 18.000000000000284,
+    "chi_tick_step_max_deg": 1.8000000000000407,
+    "command_updates": 4000,
+    "altitude_drift_m": -1.0424756388509877
+  }
+}

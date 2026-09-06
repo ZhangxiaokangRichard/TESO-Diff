@@ -1,26 +1,17 @@
 #!/usr/bin/env python3
-<<<<<<< HEAD
 """WP2A-8 控制品质试验 v4（轨迹修正 + 多任务整定参数）+ T14/T15 API 层试验。
 
 v4 改动：
-=======
-"""WP2A-8 控制品质试验 v4（轨迹修正 + 多任务整定参数）。
-
-改动（v4）：
->>>>>>> c950170b05f376bf9386b115ad3552ab3a2684b8
 1. 轨迹修正：8 字改为空间 8 字（两个大弧 + 两条错高公切线，全路径连续）；
    跑马场保持长轴沿北/圆弧外凸版本；
 2. 使用 tuning_04 三任务联合整定参数；
 3. 输出一张 2×2 融合图（航迹 / xyz 期望位置 / 体轴姿态角 / 体轴角速率）；
    删除原图 5（体轴速度：TECS 已把空速作为前馈指令，体轴速度无独立价值）；
 4. 旧试验图归档到 quality_trials/prevent_logs/。
-<<<<<<< HEAD
 
 T14/T15 新增（API 层）：
 - T14：FlightController.command_loiter() 指点盘旋，400 s；
-- T15：FlightController.command_heading() 航点 8 字，400 s。
-=======
->>>>>>> c950170b05f376bf9386b115ad3552ab3a2684b8
+- T15：PolylinePathFollower 自适应前视 → HeadingCommand，400 s。
 
 中文通过 mpl_style.setup_chinese_font() 保证无乱码。
 输出目录：experiments/wp2a8/quality_trials/
@@ -42,7 +33,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from mpl_style import new_axes, save_figure, setup_chinese_font  # noqa: E402
 from python.bindings import AvantiInput, AvantiLibrary  # noqa: E402
 from python.controller import AvantiController  # noqa: E402
-from python.controller.controllerAPI import FlightController, HeadingCommand, LoiterCommand  # noqa: E402
+from python.controller.controllerAPI import (  # noqa: E402
+    FlightController,
+    HeadingCommand,
+    LoiterCommand,
+    PolylinePathFollower,
+)
 from python.controller.types import ControlObservation  # noqa: E402
 from python.simulation import ClosedLoopHarness, WindStub  # noqa: E402
 from python.simulation.harness import LOG_FIELDS  # noqa: E402
@@ -55,6 +51,12 @@ from python.simulation.task_route import (  # noqa: E402
 OUT_DIR = Path(__file__).resolve().parent / "quality_trials"
 PREVENT_DIR = OUT_DIR / "prevent_logs"
 DEG = np.pi / 180.0
+PATH_DIAG_FIELDS = (
+    "path_segment_index", "path_lap_count", "path_progress_m",
+    "path_lookahead_m", "path_cross_track_m",
+    "path_target_north", "path_target_east", "path_target_alt",
+    "chi_cmd_raw", "chi_cmd_limited", "path_command_updated",
+)
 
 
 def load_tuned() -> dict:
@@ -222,7 +224,7 @@ def run_api_trial(
         每个控制步调用，用于动态更新 HeadingCommand（8 字航点跟踪）。
         Loiter 模式传 None。
     """
-    log: dict[str, list] = {f: [] for f in LOG_FIELDS}
+    log: dict[str, list] = {f: [] for f in (*LOG_FIELDS, *PATH_DIAG_FIELDS)}
     ctrl_interval = max(1, int(round(1.0 / controller_rate_hz / dt_plant)))
     n_steps = int(round(seconds / dt_plant))
     wind_flat = np.array([wind_neu[0], wind_neu[1], 0.0])
@@ -235,6 +237,7 @@ def run_api_trial(
 
         last_cmd = None
         last_inter: dict = {}
+        last_diag: dict = {}
 
         for k in range(n_steps):
             t = k * dt_plant
@@ -243,7 +246,9 @@ def run_api_trial(
 
             if k % ctrl_interval == 0:
                 if step_hook is not None:
-                    step_hook(fc, t, obs)
+                    diag = step_hook(fc, t, obs)
+                    if diag is not None:
+                        last_diag = diag
                 last_cmd = fc.step(obs)
                 last_inter = fc.intermediates()
 
@@ -276,7 +281,11 @@ def run_api_trial(
             log["theta_cmd"].append(_g("theta_cmd"))
             log["psi_cmd"].append(_g("psi_cmd"))
             log["throttle_cmd"].append(_g("throttle_cmd"))
-            log["cross_track"].append(_g("cross_track"))
+            true_cross = last_diag.get("path_cross_track_m")
+            log["cross_track"].append(
+                abs(float(true_cross)) if true_cross is not None
+                else _g("cross_track")
+            )
             log["p_sp"].append(_g("p_sp"))
             log["q_sp"].append(_g("q_sp"))
             log["r_sp"].append(_g("r_sp"))
@@ -286,6 +295,8 @@ def run_api_trial(
             log["wind_x"].append(float(wind_flat[0]))
             log["wind_y"].append(float(wind_flat[1]))
             log["wind_z"].append(float(wind_flat[2]))
+            for key in PATH_DIAG_FIELDS:
+                log[key].append(float(last_diag.get(key, np.nan)))
 
             inp = AvantiInput()
             inp.delta_e_norm = float(last_cmd.delta_e[0]) if last_cmd else 0.0
@@ -339,7 +350,6 @@ def main() -> int:
                         n_pts=1441, airspeed=16.0)
     run_and_plot("T13_racetrack", "跑马场 L=400/R=80（长轴沿北）",
                  rt, WindStub((0.0, 0.0, 0.0)), 180.0)
-<<<<<<< HEAD
 
     # ------------------------------------------------------------------
     # T14  指点盘旋（FlightController.command_loiter API）
@@ -358,7 +368,7 @@ def main() -> int:
     stats_all.append(stats_of("T14_api_loiter", log14, 16.0))
 
     # ------------------------------------------------------------------
-    # T15  8 字飞行（FlightController.command_heading + 平面 8 字航点）
+    # T15  8 字飞行（自适应弧长前视 + FlightController.command_heading）
     # ------------------------------------------------------------------
     print("  运行 T15_api_heading_figure8: 400s ...")
     # 8 字圆心在初始位置正北 200 m，半径 80 m；飞机初始向北飞行直达 touching point
@@ -366,35 +376,53 @@ def main() -> int:
     F8_R = 80.0
     F8_ALT = 1000.0
     wps = _flat_figure8_waypoints(F8_CENTER, F8_R, F8_ALT, n_per_circle=100)
-    N_WP = len(wps)
-    ADVANCE_DIST = 25.0  # m，到达航点时提前切换
+    follower = PolylinePathFollower(
+        wps,
+        airspeed=16.0,
+        gamma=0.0,
+        closed=True,
+        lookahead_time_s=2.5,
+        lookahead_min_m=35.0,
+        lookahead_max_m=55.0,
+        cross_track_gain=1.0,
+        heading_rate_limit_degps=18.0,
+        update_period_s=0.1,
+    )
+    # 8 字交叉点有两个几何分支；显式指定第 0 段并保留单调弧长进度。
+    follower.reset(initial_segment=0, initial_chi=0.0)
 
-    wp_state = [0]  # 可变状态（lambda 闭包共享）
-
-    def _t15_hook(fc: FlightController, t: float, obs: ControlObservation) -> None:
-        pos = obs.neu_pos[0]  # [3]
-        idx = wp_state[0]
-        wp = wps[idx]
-        dist = float(np.hypot(wp[0] - pos[0], wp[1] - pos[1]))
-        if dist < ADVANCE_DIST:
-            wp_state[0] = (idx + 1) % N_WP
-            wp = wps[wp_state[0]]
-        chi = float(np.arctan2(wp[1] - pos[1], wp[0] - pos[0]))
-        fc.command_heading(HeadingCommand(
-            airspeed=16.0, gamma=0.0, chi=chi, timestamp=t
-        ))
+    def _t15_hook(fc: FlightController, t: float, obs: ControlObservation) -> dict:
+        gs = float(np.linalg.norm(obs.neu_vel[0, :2]))
+        fc.command_heading(follower.update(obs.neu_pos[0], t, gs))
+        status = follower.status()
+        return {
+            "path_segment_index": status.segment_index,
+            "path_lap_count": status.lap_count,
+            "path_progress_m": status.progress_m,
+            "path_lookahead_m": status.lookahead_m,
+            "path_cross_track_m": status.signed_cross_track_m,
+            "path_target_north": status.target_neu[0],
+            "path_target_east": status.target_neu[1],
+            "path_target_alt": status.target_neu[2],
+            "chi_cmd_raw": status.chi_raw,
+            "chi_cmd_limited": status.chi_command,
+            "path_command_updated": float(status.updated),
+        }
 
     fc15 = FlightController({"outer": cfg["outer"], "inner": cfg["inner"]})
     fc15.reset(1)
-    # 初始指令：向北飞向 8 字起点
-    init_chi = float(np.arctan2(F8_CENTER[1], F8_CENTER[0]))
-    fc15.command_heading(HeadingCommand(airspeed=16.0, gamma=0.0, chi=init_chi, timestamp=0.0))
+    # 初始指令由适配器在 t=0 生成；先提供安全的向北保持值。
+    fc15.command_heading(HeadingCommand(airspeed=16.0, gamma=0.0, chi=0.0, timestamp=0.0))
     log15 = run_api_trial(fc15, step_hook=_t15_hook, seconds=400.0, airspeed_cmd=16.0)
-    plot_trial("T15_api_heading_figure8", "FlightController 直飞接口 8 字（API Heading）",
-               log15, wps, OUT_DIR / "trial_T15_api_heading_figure8.png")
-    stats_all.append(stats_of("T15_api_heading_figure8", log15, 16.0))
-=======
->>>>>>> c950170b05f376bf9386b115ad3552ab3a2684b8
+    plot_trial("T15_api_heading_figure8_adaptive",
+               "自适应弧长前视 → API Heading（无 Dubins）",
+               log15, wps, OUT_DIR / "trial_T15_api_heading_figure8_adaptive.png")
+    stats15 = stats_of("T15_api_heading_figure8_adaptive", log15, 16.0)
+    stats15.update({
+        "completed_laps": int(np.nanmax(log15["path_lap_count"])),
+        "lookahead_mean_m": float(np.nanmean(log15["path_lookahead_m"])),
+    })
+    stats_all.append(stats15)
 
     summary = {
         "config": {
@@ -403,13 +431,10 @@ def main() -> int:
         },
         "note": ("v4：空间 8 字（两圆圆心高度差 10m、切点 ±5m 错高、双公切线全连续）、"
                  "跑马场长轴沿北；loiter setpoint 导航已删除；"
-<<<<<<< HEAD
                  "图 5（体轴速度）删除，前 4 图融合为一张 2×2 图。"
                  "T14 = FlightController.command_loiter() 指点盘旋 400s；"
-                 "T15 = FlightController.command_heading() 平面 8 字航点跟踪 400s。"),
-=======
-                 "图 5（体轴速度）删除，前 4 图融合为一张 2×2 图。"),
->>>>>>> c950170b05f376bf9386b115ad3552ab3a2684b8
+                 "T15 = PolylinePathFollower 自适应弧长前视输出 HeadingCommand，"
+                 "不使用 Dubins，400s。"),
         "trials": stats_all,
     }
     (OUT_DIR / "summary.json").write_text(
