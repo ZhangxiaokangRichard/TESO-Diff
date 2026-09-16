@@ -1,0 +1,239 @@
+flowchart LR
+
+    %% ───────────────────────────────────────────────────────────────────
+    %% TESO-Diff / WP2A-8 控制器控制框图（含控制品质标注）
+    %%
+    %% 布局说明：flowchart LR 使控制层级从左到右排列（① → ② → ③ → ④ → ⑤），
+    %%           每个子图内部用 direction TB 纵向堆叠节点，形成「分层流水线」。
+    %%
+    %% 注意：Mermaid v10 不接受「图形类型声明之前」出现 %% 注释块，
+    %%       因此 flowchart LR 必须位于文件第 1 行，文档注释一律写在其后。
+    %%
+    %% 实测数据来源：
+    %%   experiments/wp2a8/quality_trials/T15_api_heading_figure8_adaptive_log.npz   (400 s)
+    %%   experiments/wp2a8/quality_trials/summary_T15_api_heading_adaptive.json
+    %%   experiments/wp2a8/quality_trials/diagnosis_inner_rate.json                   (对照试验)
+    %%   experiments/wp2a8/roll_authority_check.py                                    (真实 DLL 开环辨识)
+    %% 参数来源：config/controller/controller.yaml（tuning_02 内环 + tuning_04 外环）
+    %%
+    %% 配色约定：
+    %%   红 #ffcdd2 —— 已确认严重缺陷（有实测数据，必须优先修）
+    %%   橙 #ffe0b2 —— 参数/结构不匹配（有实测数据，但须等红线修完后重调）
+    %%   黄 #fff9c4 —— 语义/实现可疑，尚未验证
+    %%   绿 #c8e6c9 —— 已验证工作良好
+    %%   灰 #eceff1 —— 中性环节，未发现异常
+    %%
+    %% 渲染：mmdc -i controller_block_diagram.mmd -o controller_block_diagram.svg
+    %%       或 VS Code Markdown Preview Mermaid Support
+    %%
+    %% 注意：节点标签内不要出现裸 | 与 ; 字符（会被当作边标签定界符 / 语句分隔符
+    %%       而导致解析失败）；本文件统一改用「幅值」等文字描述。
+    %% ───────────────────────────────────────────────────────────────────
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% ① 目标点采样层
+    %% ══════════════════════════════════════════════════════════════════
+    subgraph G0["① 目标点采样层 · PolylinePathFollower · 10 Hz (update_period_s = 0.1 s)<br/>python/controller/controllerAPI.py"]
+        direction TB
+        P_SRC["采样路径 path (N,3) NEU<br/>8 字 / 圆 / 跑马场 polyline<br/>8 字：2 圆 × 100 点，R = 80 m"]
+        P_PROJ["局部线段正交投影<br/>前向窗口 20 段 / 回看 2 段<br/>→ 投影点 · 路径切向 · 弧长"]
+        P_MONO["单调弧长进度 σ<br/>只前进不回退<br/>8 字交叉点靠前向窗口消歧"]
+        P_LOOK["速度自适应前视距离<br/>L_look = clip( V_g · 2.5, 35, 55 ) m"]
+        P_TGT["前视虚拟目标点<br/>target = point_at( σ + L_look )<br/>路径切向 χ_path"]
+        P_CT["横侧修正<br/>Δχ = atan( k_ct · e_ct / L_look )<br/>k_ct = 1.0"]
+        P_RAW["χ_raw = wrap( χ_path − Δχ )"]
+        P_LIM["航向限速 ±18 deg/s<br/>→ χ_cmd（时间连续）"]
+
+        P_SRC --> P_PROJ --> P_MONO --> P_LOOK --> P_TGT --> P_RAW --> P_LIM
+        P_CT --> P_RAW
+    end
+
+    CMD["HeadingCommand<br/>V_a* = 16 m/s · γ* = 0 · χ* = χ_cmd"]
+    P_LIM --> CMD
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% ② API 适配层
+    %% ══════════════════════════════════════════════════════════════════
+    subgraph G1["② API 适配层 · FlightController._step_heading() · 50 Hz<br/>python/controller/controllerAPI.py"]
+        direction TB
+        A_STORE["command_heading() 仅锁存指令<br/>不重置 TECS / PID 积分器"]
+        A_LINE["每步重生成前视直线路径<br/>N_pts = 20 · 全长 1000 m · 方向 = χ_cmd"]
+        A_IDX["每步清零 l1._ref_index = 0"]
+        A_ALT["alt_cmd = h_now + V · sin γ / kp_h<br/>kp_h = 0.232（每步随当前高度重锚）"]
+        A_REF["ControlReference<br/>airspeed_cmd / altitude_cmd / path<br/>gamma_cmd 字段存在但未被 TECS 使用"]
+        A_TS["timestamp 仅被保存，未参与校验或状态更新"]
+
+        A_STORE --> A_LINE
+        A_LINE --> A_IDX --> A_REF
+        A_LINE --> A_ALT --> A_REF
+        A_TS --> A_STORE
+    end
+    CMD --> A_STORE
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% ③ 外环 · 位置 / 能量控制
+    %% ══════════════════════════════════════════════════════════════════
+    subgraph G2["③ 外环 · 位置 / 能量控制 · 实际运行 50 Hz<br/>（controller.yaml 写 outer_rate_hz = 20，代码中未见分频实现）<br/>python/controller/ l1.py · tecs.py · coordinated_turn.py · outer.py"]
+        direction TB
+
+        subgraph G2A["L1 / NPFG 侧向制导 → a_cmd"]
+            direction TB
+            L1_REF["参考点选择<br/>dist ≥ L1 中取与地速航向夹角最小者"]
+            L1_DIST["L1_dist = (1/π) · ζ · period · GS<br/>ζ = 0.619 · period = 11.91 s · clip 20…300 m"]
+            L1_ETA["η = wrap( χ_ref − χ_GS )"]
+            L1_A["a_cmd = 4ζ² · GS² / L1_dist · sin η<br/>限幅 ±15 m/s²"]
+            L1_NPFG["NPFG 风三角<br/>a⃗ = s · t̂ − w⃗<br/>s = w⃗·t̂ + √( V*² − (w⃗×t̂)² )<br/>→ 期望空速航向 χ_air"]
+            L1_REF --> L1_DIST --> L1_A --> L1_NPFG
+            L1_ETA --> L1_A
+        end
+
+        subgraph G2B["协调转弯律 CoordinatedTurn → φ_cmd"]
+            direction TB
+            CT_PHI["φ_cmd = atan2( a_cmd , g )<br/>限幅 ±35 deg"]
+            CT_RATE["φ_cmd 限速 ±15 deg/s"]
+            CT_PHI --> CT_RATE
+        end
+
+        subgraph G2C["TECS 总能量控制 → θ_cmd · throttle"]
+            direction TB
+            T_STE["STE 误差<br/>STE_err = ( h* − h ) + ( V*² − V² ) / (2g)"]
+            T_THR["油门通道（总能量）<br/>throttle = 0.524 + 1.112 · ΔSTE_rate + 0.134 · ∫"]
+            T_V["空速侧能量分配<br/>V̇_sp = clip( 0.904·ΔV + 0.194·∫ΔV , ±3 ) m/s²"]
+            T_H["高度侧能量分配<br/>climb_sp = clip( 0.232·Δh , ±5 ) m/s"]
+            T_BAL["能量平衡 → 俯仰<br/>θ_cmd = 0.771·γ_sp + 7.098° + 3.080·Δb + 0.137·∫b<br/>限幅 ±20 deg"]
+            T_COMP["转弯升力补偿<br/>Δθ = 0.502 · ( 1 / cos φ_cmd − 1 )"]
+            T_STE --> T_THR
+            T_STE --> T_V
+            T_STE --> T_H
+            T_V --> T_BAL
+            T_H --> T_BAL
+            T_COMP --> T_BAL
+        end
+    end
+    A_REF --> L1_REF
+    A_REF --> L1_NPFG
+    A_REF --> T_STE
+    L1_NPFG --> CT_PHI
+
+    %% ── 外环 → 内环 的三条指令通路（关键：第 1 条语义错误）──────────
+    L1_NPFG ==>|"psi_cmd ← χ_air（期望航迹角当成期望偏航角）"| I_EPSI
+    CT_RATE -->|"φ_cmd"| I_EPHI
+    T_BAL -->|"θ_cmd"| I_ETH
+    T_THR -->|"throttle"| PL_IN
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% ④ 内环 · 串级姿态控制
+    %% ══════════════════════════════════════════════════════════════════
+    subgraph G3["④ 内环 · 串级姿态控制 · 50 Hz ( dt = 0.02 s，与 plant 同频 )<br/>python/controller/inner.py"]
+        direction TB
+
+        subgraph G3A["角速率 setpoint 生成（角度环 P + 前馈）"]
+            direction TB
+            I_EPHI["滚转角度环 P<br/>err_φ = wrap( φ_cmd − φ )<br/>p_sp = clip( 9.897 · err_φ , ±60 deg/s )"]
+            I_ETH["俯仰角度环 P<br/>err_θ = θ_cmd − θ<br/>q_sp = clip( 5.953 · err_θ , ±45 deg/s )"]
+            I_EPSI["偏航角度环 P<br/>err_ψ = wrap( χ_cmd − ψ )<br/>r_sp = clip( 6.0 · err_ψ , ±30 deg/s )"]
+            I_RFF["协调转弯前馈<br/>r_ff = g · tan φ_cmd · cos θ / V_TAS<br/>r_sp = clip( r_sp + r_ff , ±30 deg/s )"]
+            I_DOT["期望角加速度（对 setpoint 逐拍求导）<br/>rate_sp_dot = ( rate_sp − rate_sp_prev ) / dt<br/>限幅 ±20 rad/s²"]
+            I_EPHI --> I_DOT
+            I_ETH --> I_DOT
+            I_EPSI --> I_RFF --> I_DOT
+        end
+
+        subgraph G3B["角速率环（角加速度前馈 + P / PI，空速缩放）"]
+            direction TB
+            I_SCALE["空速缩放<br/>控制项 × ( V_trim / V_TAS )²<br/>前馈项 × ( V_trim / V_TAS )<br/>V_trim = 16 m/s"]
+            I_ROLL["滚转轴（无积分）<br/>delta_a = − 0.822 · p_dot_sp − 0.900 · ( p_sp − p )"]
+            I_PITCH["俯仰轴<br/>delta_e = − 0.024 · q_dot_sp − 0.512 · Δq − 3.413 · ∫Δq"]
+            I_YAW["偏航轴<br/>delta_r = + 0.406 · r_dot_sp + 1.333 · Δr + 3.802 · ∫Δr − 0.5 · β"]
+            I_CLIP["舵面限幅 ±1"]
+            I_SCALE --> I_ROLL
+            I_SCALE --> I_PITCH
+            I_SCALE --> I_YAW
+            I_ROLL --> I_CLIP
+            I_PITCH --> I_CLIP
+            I_YAW --> I_CLIP
+        end
+        I_DOT --> I_SCALE
+    end
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% ⑤ 被控对象
+    %% ══════════════════════════════════════════════════════════════════
+    subgraph G4["⑤ 被控对象 · AVANTI2 非线性 6DOF"]
+        direction TB
+        PL_IN["AvantiInput（7 通道）<br/>δe · δa · δr 归一化 · throttle<br/>风速 flat-Earth Xe / Ye / Ze"]
+        PL_SO["avanti2.dll 固定步长积分<br/>dt_plant = 0.02 s，50 Hz，ODE4"]
+        PL_OUT["AvantiOutput<br/>NEU 位置 / 速度（Up 正）<br/>Euler(deg) · body u,v,w · p,q,r · α,β"]
+        PL_IN --> PL_SO --> PL_OUT
+    end
+
+    I_CLIP --> PL_IN
+    PL_OUT --> FB["反馈 · ControlObservation.from_fw_outputs()<br/>单位统一为 SI + rad<br/>同时送往 ① 路径采样 / ② API 适配 / ③ 外环 / ④ 内环"]
+
+    %% 反馈回路（虚线，表示与正向控制流方向相反）
+    FB -.->|"闭环反馈"| G2A
+    FB -.->|"闭环反馈"| G3A
+    FB -.->|"位置 / 地速"| G0
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% 实测证据（与红 / 橙 / 绿节点一一对应）
+    %% ══════════════════════════════════════════════════════════════════
+    subgraph EV["T15 8 字 400 s 实测证据"]
+        direction TB
+        E1["红 E1 · 偏航通道语义错误<br/>psi_cmd ← χ_cmd，把期望航迹角当成期望偏航角<br/>→ 稳态侧滑 +9.96°，β 幅值均值 9.67°（协调转弯应 &lt; 1°）<br/>对照 psi_cmd = None：φ MAE 6.06° → 1.19°<br/>β 9.67° → 0.97°，横侧 2.52 → 2.20 m，p_sp 打限幅 58.8% → 1.3%"]
+        E2["红 E2 · 滚转角速率需求打限幅<br/>打限幅阈值 = p_limit / k_φ = 60 / 9.897 = 6.06°<br/>实测 err_φ 幅值中位数 = 6.06°（恰好等于阈值）<br/>超过 6.06° 的时间占 50.5%，p_sp 停在 ±60 deg/s 占 58%<br/>corr( p_sp , p ) = +0.007，p 幅值均值 4.0 vs p_sp 幅值均值 56.4 deg/s"]
+        E3["红 E3 · 舵面 δa 高频抖振<br/>饱和（δa 幅值 ≥ 0.99）占 48.25%<br/>3906 段，段长中位 40 ms = 2 tick（50 Hz 奈奎斯特）<br/>对比：δe 饱和 0%，δr 饱和 19.2%"]
+        E4["红 E4 · 对限幅方波求导的前馈<br/>ff_roll = 0.822，理论值 1/K_plant ≈ 0.452 → 1.8 倍过驱动<br/>前馈幅值 &gt; 0.6 的时间占 46.1%，最大幅值 5.24（饱和值仅 1）<br/>18.1% 的时间前馈把 P 项方向整体翻转<br/>对比：ff_pitch = 0.024 vs 理论 0.023（正确）"]
+        E5["橙 E5 · 滚转速率环增益不足<br/>开环辨识 K_plant ≈ 15 … 29 (deg/s) per unit（V = 16 m/s）<br/>满舵稳态滚转角速率仅 15 … 29 deg/s，需求为 60 deg/s，结构上不可达<br/>k_rate = 0.900 且无积分 → 环路直流增益 ≈ 0.45 &lt; 1<br/>线性区角速率跟踪比仅 ≈ 0.31"]
+        E6["绿 E6 · 已验证良好<br/>横侧 MAE 2.47 m · 完成 6 圈 · 进度单调<br/>高度 RMSE 0.995 m，漂移 −1.04 m · TAS RMSE 0.026 m/s<br/>θ MAE 1.88° · q 跟踪 corr 0.887 · r 跟踪 corr 0.936<br/>δe 饱和 0%，q_sp 从未打限幅（最大 35.8 &lt; 45 deg/s）"]
+        E1 --> E2 --> E3 --> E4 --> E5 --> E6
+    end
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% 图例
+    %% ══════════════════════════════════════════════════════════════════
+    LG["<b>配色图例</b><br/>
+        <span style='color:#1b5e20'>■ 绿 · 已验证良好</span><br/>
+        <span style='color:#6d4c00'>■ 黄 · 语义可疑待验证</span><br/>
+        <span style='color:#7f3f00'>■ 橙 · 参数/结构不匹配</span><br/>
+        <span style='color:#7f0000'>■ 红 · 确认严重缺陷</span>"]
+
+    %% 让证据面板参与整体布局，避免与图例重叠
+    FB -.-> EV
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %% 样式定义
+    %% ══════════════════════════════════════════════════════════════════
+    classDef good    fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
+    classDef mild    fill:#fff9c4,stroke:#f9a825,stroke-width:2px,color:#6d4c00
+    classDef warn    fill:#ffe0b2,stroke:#ef6c00,stroke-width:2px,color:#7f3f00
+    classDef bad     fill:#ffcdd2,stroke:#c62828,stroke-width:3px,color:#7f0000
+    classDef neutral fill:#eceff1,stroke:#546e7a,stroke-width:1px,color:#263238
+
+    %% ── 绿：已验证良好 ────────────────────────────────────────────
+    class P_SRC,P_PROJ,P_MONO,P_LOOK,P_TGT,P_CT,P_RAW,P_LIM good
+    class L1_REF,L1_DIST,L1_ETA,L1_A,L1_NPFG good
+    class CT_PHI,CT_RATE good
+    class T_STE,T_THR,T_V,T_H,T_BAL good
+    class I_ETH,I_PITCH,I_RFF,I_SCALE,I_YAW good
+    class PL_IN,PL_SO,PL_OUT,FB neutral
+
+    %% ── 黄：语义 / 实现可疑 ───────────────────────────────────────
+    class A_LINE,A_IDX,A_ALT,A_TS,A_REF,CMD,I_CLIP,T_COMP mild
+
+    %% ── 橙：参数 / 结构不匹配 ─────────────────────────────────────
+    class I_ROLL warn
+
+    %% ── 红：确认的严重缺陷 ────────────────────────────────────────
+    class I_EPSI,I_EPHI,I_DOT bad
+
+    class E1,E2,E3,E4,E5 bad
+    class E6 good
+    class LG neutral
+
+    %% ── 关键缺陷边高亮 ────────────────────────────────────────────
+    %% 注意：linkStyle 的 index 按「箭头出现顺序」计数，链式写法 A-->B-->C 计 2 条。
+    %%       当前共 58 条链路；增删任何连线后此 index 必须重新核对，
+    %%       否则会高亮到错误的边上。
+    %%       index 30 = L1_NPFG ==> I_EPSI，即 psi_cmd ← χ_air 的跨语义错误连接。
+    linkStyle 30 stroke:#c62828,stroke-width:4px,color:#c62828

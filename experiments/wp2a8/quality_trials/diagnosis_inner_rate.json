@@ -1,0 +1,304 @@
+{
+  "open_loop": {
+    "square_and_steps": {
+      "square_wave": {
+        "0.1": [
+          -0.053288732024468634,
+          0.04698387015062775,
+          -0.5013630108754819
+        ],
+        "0.25": [
+          -0.13259037911204272,
+          0.11580470574398326,
+          -0.4967901697120519
+        ],
+        "0.5": [
+          -0.2608316112488725,
+          0.22018485261089435,
+          -0.4810164638597668
+        ]
+      },
+      "steps": [
+        {
+          "delta_a": -1.0,
+          "p_tail_mean_degps": 1.5004855670093387,
+          "p_peak_degps": 18.969700301736
+        },
+        {
+          "delta_a": 1.0,
+          "p_tail_mean_degps": -18.650714044466913,
+          "p_peak_degps": 30.436396735897603
+        },
+        {
+          "delta_a": -0.5,
+          "p_tail_mean_degps": 1.10769763713546,
+          "p_peak_degps": -6.675333318192026
+        },
+        {
+          "delta_a": 0.5,
+          "p_tail_mean_degps": -5.660944315338673,
+          "p_peak_degps": 7.640808233965777
+        }
+      ]
+    },
+    "first_order_model": {
+      "a": -0.11864853847332511,
+      "b": 0.21711313770232024,
+      "r2": 0.02718214309218203,
+      "tau_s": -4.605893547405138,
+      "ss_rate_full_aileron_degps": 31.311142991437922,
+      "required_ff": 8.428253840015254,
+      "configured_ff": 0.8221162835069216
+    }
+  },
+  "variants": [
+    {
+      "label": "基线（tuning_02 参数）",
+      "variant": {},
+      "phi_step_deg": -12.0,
+      "phi_err_mae_deg": 1.0610019304377631,
+      "phi_err_ss_deg": 0.684699669922703,
+      "p_sp_rail_pct": 2.705882352941176,
+      "delta_a_sat_pct": 3.294117647058824,
+      "rate_track_corr": 0.8754897452573736,
+      "rate_err_mae_degps": 7.744748717252184,
+      "p_mean_abs_degps": 1.7510870534809932,
+      "p_sp_mean_abs_degps": 9.482797046846784
+    },
+    {
+      "label": "去掉角加速度前馈 ff_roll=0",
+      "variant": {
+        "channels": {
+          "roll": {
+            "rate_ff": 0.0
+          }
+        }
+      },
+      "phi_step_deg": -12.0,
+      "phi_err_mae_deg": 0.9224577746404202,
+      "phi_err_ss_deg": 0.5063743899086739,
+      "p_sp_rail_pct": 2.705882352941176,
+      "delta_a_sat_pct": 2.941176470588235,
+      "rate_track_corr": 0.8362611419271567,
+      "rate_err_mae_degps": 6.272164619191908,
+      "p_mean_abs_degps": 2.003548376389231,
+      "p_sp_mean_abs_degps": 8.111635912444346
+    },
+    {
+      "label": "前馈改为 1/|a| 理论值",
+      "variant": {
+        "channels": {
+          "roll": {
+            "rate_ff": 8.4283
+          }
+        }
+      },
+      "phi_step_deg": -12.0,
+      "phi_err_mae_deg": 2.4513254395714617,
+      "phi_err_ss_deg": 0.9343647688357757,
+      "p_sp_rail_pct": 2.705882352941176,
+      "delta_a_sat_pct": 91.17647058823529,
+      "rate_track_corr": 0.3420633919462863,
+      "rate_err_mae_degps": 22.68177403580387,
+      "p_mean_abs_degps": 2.989042587177698,
+      "p_sp_mean_abs_degps": 23.242724695896662
+    },
+    {
+      "label": "前馈=0 + 速率环增益×4",
+      "variant": {
+        "channels": {
+          "roll": {
+            "rate_ff": 0.0,
+            "rate_kp": 4.0
+          }
+        }
+      },
+      "phi_step_deg": -12.0,
+      "phi_err_mae_deg": 0.6221534588843928,
+      "phi_err_ss_deg": 0.29879386432887206,
+      "p_sp_rail_pct": 2.705882352941176,
+      "delta_a_sat_pct": 3.6470588235294117,
+      "rate_track_corr": 0.8652832950428139,
+      "rate_err_mae_degps": 3.304166968848721,
+      "p_mean_abs_degps": 1.9377755838773347,
+      "p_sp_mean_abs_degps": 5.139546589093221
+    },
+    {
+      "label": "限幅降到 30 deg/s",
+      "variant": {
+        "inner_top": {
+          "p_limit_degps": 30.0
+        }
+      },
+      "phi_step_deg": -12.0,
+      "phi_err_mae_deg": 1.0646497167438476,
+      "phi_err_ss_deg": 0.6732942357608138,
+      "p_sp_rail_pct": 4.470588235294118,
+      "delta_a_sat_pct": 0.7058823529411765,
+      "rate_track_corr": 0.8620250184682674,
+      "rate_err_mae_degps": 6.416938397460115,
+      "p_mean_abs_degps": 1.7823897329792924,
+      "p_sp_mean_abs_degps": 8.192609350988638
+    }
+  ],
+  "turn_hold": [
+    {
+      "label": "基线（tuning_02 参数）",
+      "hold_phi_mean_deg": -16.984342968546795,
+      "hold_err_mean_deg": 0.48434296854679393,
+      "hold_p_sp_rail_pct": 0.0,
+      "hold_delta_a_sat_pct": 0.0,
+      "hold_p_mean_degps": 1.6460377458710709,
+      "hold_beta_mean_deg": -2.2960594365773925,
+      "hold_r_mean_degps": -14.000455473696709,
+      "step_phi_mean_deg": -10.325201423874319,
+      "step_err_mean_deg": -0.07479857612568006,
+      "step_p_sp_rail_pct": 0.0,
+      "step_delta_a_sat_pct": 0.0,
+      "step_delta_a_mean": 0.04726141432181282,
+      "step_p_mean_degps": 1.0443297587723877
+    },
+    {
+      "label": "ff_roll=0（关闭角加速度前馈）",
+      "hold_phi_mean_deg": -16.98244017842487,
+      "hold_err_mean_deg": 0.4824401784248702,
+      "hold_p_sp_rail_pct": 0.0,
+      "hold_delta_a_sat_pct": 0.0,
+      "hold_p_mean_degps": 1.6444897027736984,
+      "hold_beta_mean_deg": -2.272606800324911,
+      "hold_r_mean_degps": -14.000764502949545,
+      "step_phi_mean_deg": -10.441623110372905,
+      "step_err_mean_deg": 0.04162311037290298,
+      "step_p_sp_rail_pct": 0.0,
+      "step_delta_a_sat_pct": 0.0,
+      "step_delta_a_mean": 0.02009291878543047,
+      "step_p_mean_degps": 1.0721408232187424
+    },
+    {
+      "label": "p_limit=30deg/s（与可达角速率匹配）",
+      "hold_phi_mean_deg": -16.986548246686148,
+      "hold_err_mean_deg": 0.4865482466861463,
+      "hold_p_sp_rail_pct": 0.0,
+      "hold_delta_a_sat_pct": 0.0,
+      "hold_p_mean_degps": 1.6468694955383416,
+      "hold_beta_mean_deg": -2.288162183498211,
+      "hold_r_mean_degps": -14.00388108434247,
+      "step_phi_mean_deg": -10.367624253004701,
+      "step_err_mean_deg": -0.03237574699530182,
+      "step_p_sp_rail_pct": 0.0,
+      "step_delta_a_sat_pct": 0.0,
+      "step_delta_a_mean": 0.03671349161143046,
+      "step_p_mean_degps": 1.0548637841094908
+    },
+    {
+      "label": "ff_roll=0 + p_limit=30",
+      "hold_phi_mean_deg": -16.990339111221417,
+      "hold_err_mean_deg": 0.49033911122141693,
+      "hold_p_sp_rail_pct": 0.0,
+      "hold_delta_a_sat_pct": 0.0,
+      "hold_p_mean_degps": 1.6473133094026473,
+      "hold_beta_mean_deg": -2.238366219416053,
+      "hold_r_mean_degps": -14.01366546770329,
+      "step_phi_mean_deg": -10.428990308689706,
+      "step_err_mean_deg": 0.02899030868970599,
+      "step_p_sp_rail_pct": 0.0,
+      "step_delta_a_sat_pct": 0.0,
+      "step_delta_a_mean": 0.02375982841917899,
+      "step_p_mean_degps": 1.0690537714295296
+    },
+    {
+      "label": "ff_roll=0 + 速率环增益×4",
+      "hold_phi_mean_deg": -16.872655881800362,
+      "hold_err_mean_deg": 0.3726558818003586,
+      "hold_p_sp_rail_pct": 0.0,
+      "hold_delta_a_sat_pct": 0.0,
+      "hold_p_mean_degps": 1.7010343616385837,
+      "hold_beta_mean_deg": 0.7247007133236018,
+      "hold_r_mean_degps": -14.57094501023095,
+      "step_phi_mean_deg": -10.521694607508294,
+      "step_err_mean_deg": 0.12169460750829486,
+      "step_p_sp_rail_pct": 0.0,
+      "step_delta_a_sat_pct": 0.0,
+      "step_delta_a_mean": -0.015274729782161503,
+      "step_p_mean_degps": 1.0935194488264703
+    }
+  ],
+  "full_trial": [
+    {
+      "label": "基线（tuning_02 参数，复现 T15）",
+      "phi_err_mae_deg": 6.058008795953348,
+      "phi_err_abs_median_deg": 6.071740125355954,
+      "p_sp_rail_pct": 58.77777777777777,
+      "delta_a_sat_pct": 48.044444444444444,
+      "delta_a_burst_median_s": 0.04,
+      "delta_a_burst_n": 1813,
+      "delta_a_mean_abs": 0.8538774043710791,
+      "rate_track_corr": 0.0068549053571439495,
+      "rate_err_mae_degps": 56.322933913693475,
+      "p_abs_mean_degps": 4.003605985723948,
+      "p_sp_abs_mean_degps": 56.35951207021673,
+      "max_phi_deg": 34.385748688725194,
+      "cross_mae_m": 2.518848383271646,
+      "beta_mean_deg": 9.6668960305523,
+      "beta_max_deg": 26.568455200568504,
+      "r_abs_mean_degps": 10.926417472491881
+    },
+    {
+      "label": "偏航去掉航向角反馈 psi_cmd=None",
+      "phi_err_mae_deg": 1.1935844542231557,
+      "phi_err_abs_median_deg": 0.5083797001517636,
+      "p_sp_rail_pct": 1.2666666666666666,
+      "delta_a_sat_pct": 82.51111111111112,
+      "delta_a_burst_median_s": 0.08,
+      "delta_a_burst_n": 1208,
+      "delta_a_mean_abs": 0.9097651280155012,
+      "rate_track_corr": 0.17622589431462163,
+      "rate_err_mae_degps": 12.463049883860966,
+      "p_abs_mean_degps": 4.290696139711347,
+      "p_sp_abs_mean_degps": 11.799639155691793,
+      "max_phi_deg": 25.939778251492072,
+      "cross_mae_m": 2.1983380496779903,
+      "beta_mean_deg": 0.9684624457657507,
+      "beta_max_deg": 7.845302147340843,
+      "r_abs_mean_degps": 10.20514014791078
+    },
+    {
+      "label": "ff_roll=0",
+      "phi_err_mae_deg": 18.944121759892763,
+      "phi_err_abs_median_deg": 11.21463455524852,
+      "p_sp_rail_pct": 66.85555555555555,
+      "delta_a_sat_pct": 42.37777777777777,
+      "delta_a_burst_median_s": 1.0,
+      "delta_a_burst_n": 55,
+      "delta_a_mean_abs": 0.7088705618720124,
+      "rate_track_corr": -0.16304575612287933,
+      "rate_err_mae_degps": 58.02344154877348,
+      "p_abs_mean_degps": 28.828211193789482,
+      "p_sp_abs_mean_degps": 49.844451771540356,
+      "max_phi_deg": 66.05127545941025,
+      "cross_mae_m": 63.60507001498462,
+      "beta_mean_deg": 22.71120831072469,
+      "beta_max_deg": 45.5088530530583,
+      "r_abs_mean_degps": 25.967533459161768
+    },
+    {
+      "label": "p_limit=30deg/s",
+      "phi_err_mae_deg": 18.907915112651708,
+      "phi_err_abs_median_deg": 10.69729136029363,
+      "p_sp_rail_pct": 68.0111111111111,
+      "delta_a_sat_pct": 38.166666666666664,
+      "delta_a_burst_median_s": 0.06,
+      "delta_a_burst_n": 244,
+      "delta_a_mean_abs": 0.6725228414993805,
+      "rate_track_corr": -0.24918137155193118,
+      "rate_err_mae_degps": 42.38693373875008,
+      "p_abs_mean_degps": 30.006404297595942,
+      "p_sp_abs_mean_degps": 24.1943588052788,
+      "max_phi_deg": 65.88954270275784,
+      "cross_mae_m": 228.64706119973286,
+      "beta_mean_deg": 24.329231249243847,
+      "beta_max_deg": 51.32331657869188,
+      "r_abs_mean_degps": 31.072411435507817
+    }
+  ]
+}
