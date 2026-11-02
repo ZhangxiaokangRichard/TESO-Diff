@@ -19,7 +19,7 @@ NPFG 改进（Stastny & Siegwart 2019，PX4 1.13+）：引入期望空速矢量�
     line_angle = 切向方向（供 NPFG 风三角），避免闭路参考点搜索歧义。
 
 注：早期试验的 loiter 切圆 setpoint 导航（figure8/racetrack 用）已在小尺度
-轨迹上验证不适用，已删除（见 docs/build_logs/phase2_sp2.md 附录 B）。
+轨迹上验证不适用，已删除（见 docs/build_logs/phase2_controller_debug.md 历史导航变体说明）。
 figure8/racetrack 统一使用 NPFG 采样路径制导。
 
 期望路径为闭合航迹（盘旋/8 字/跑马场）。

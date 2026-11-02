@@ -4,7 +4,7 @@
 确定 delta_e/delta_a/delta_r 正指令对 pitch/roll/yaw 的响应方向，
 为内环 PID 符号设计与 GA 搜索范围提供依据（对应 docs §6.6 WP2A-3）。
 
-2026-08-30 复测结论（throttle=0.4 基线，见 build_logs/phase2_sp2.md）：
+2026-08-30 复测结论（throttle=0.4 基线，见 build_logs/phase2_controller_debug.md）：
     delta_e 正 → 低头（theta 减小）   → 俯仰通道取负（修正：早期辨识反了）
     delta_a 正 → 左滚（phi 减小）     → 滚转通道取负
     delta_r 正 → 右偏航（psi 增加）   → 偏航通道取正

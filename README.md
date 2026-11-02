@@ -57,7 +57,9 @@ scripts/run_phase2a_smoke.sh
 python3 scripts/benchmark_runtime.py --envs 1 8 32 --seconds 60
 ```
 
-## 当前进度（详见 docs/build_logs/phase2_sp1.md、phase2_sp2.md）
+## 当前进度（详见 docs/build_logs/phase2_controller_debug.md）
+
+2026-11-02：用户手动测试后暂时接受当前Simulink集成姿态整定。MATLAB工具已迁至 `E:/matlab_Project/AVANTI_4/matlab`；本仓库保留统一调试记录和Python运行时。MATLAB参数尚不代表已同步至Python控制器。
 
 - [x] 按 phase2 §6.2 搭建项目目录架构
 - [x] 从 phase1 复制 6DOF runtime（源码 + C ABI + `.so` + ctypes 封装 + 回归测试）
