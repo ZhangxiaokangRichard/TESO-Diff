@@ -1,0 +1,55 @@
+# WP2A-8b generated-attitude backend. Full quality limits in experiments/wp2a8b/README.md.
+controller:
+  name: npfg_tecs_generated_att
+  backend: fixedwing_att
+  outer_rate_hz: 50
+  inner_rate_hz: 50
+  inner_loop: generated_cpp
+  status: wp2a8b_deterministic_trials_complete
+aircraft_config: config/aircraft/avanti2_att.yaml
+outer:
+  l1:
+    npfg_enabled: true
+    period_s: 11.913220346584133
+    damping: 0.6186367698924958
+    l1_dist_min_m: 20.0
+    l1_dist_max_m: 300.0
+    a_cmd_limit_mps2: 15.0
+    circle_kr: 0.6965681996324362
+    circle_kv: 0.9225083326884499
+  coordinated_turn:
+    bank_limit_deg: 35.0
+    bank_rate_limit_degps: 15.0
+    dt: 0.02
+  tecs:
+    dt: 0.02
+    throttle_trim: 0.5237112533716315
+    theta_trim_deg: -2
+    energy_kp: 0.3
+    throttle_kp: 0.15
+    throttle_ki: 0.04
+    airspeed_kp: 0.4
+    airspeed_ki: 0.03
+    height_kp: 0.15
+    balance_kp: 0.3
+    balance_ki: 0.05
+    gamma_ff_gain: 0.770883373712698
+    bank_comp_gain: 0.1
+    climb_sp_limit_mps: 5.0
+    gamma_limit_deg: 20.0
+    v_dot_limit_mps2: 3.0
+    theta_limit_deg: 20.0
+    tas_derivative_tau: 0.2
+routing:
+  lateral: L1/NPFG -> bank command
+  longitudinal: TECS -> pitch + throttle
+  embedded: Euler/body conversion + coordinated yaw + PID + allocation in generated
+    runtime
+  bypass_python_inner: true
+calibration:
+  guidance_seed: experiments/wp2a8/tuning_04_multitask_ga/result.json
+  tecs_adaptation: experiments/wp2a8b/tecs_compatibility_scan.json
+  scope: IAS16; 400s heading/loiter/figure8; no wind and 3m/s crosswind loiter
+  native_inner_gain_override: false
+  circle_capture: bearing feedback + radial convergence field + aligned curvature
+    feedforward

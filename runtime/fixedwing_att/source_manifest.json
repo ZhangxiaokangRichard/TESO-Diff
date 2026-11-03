@@ -1,0 +1,25 @@
+{
+  "source_bundle": "E:\\matlab_Project\\AVANTI_4\\ert_model\\portable\\avanti2_att",
+  "import_date": "2026-11-03",
+  "files": {
+    "generated/PX4Controller_ertmodel0827.cpp": "9a4b50b0d5411249f830ae5c169e3681a3697b18cbf2f0d2af1ef36ebcc7e5b9",
+    "generated/PX4Controller_ertmodel0827_data.cpp": "af4b58c0720e9d54ea24c4ac8993e5d7a2e02700e8d4ccb5748c3861f7cd87e7",
+    "generated/rtGetInf.cpp": "41a93105f98ae3634f574af4c285743b208c41edb5bb95f8b878ef3c409241b1",
+    "generated/rtGetNaN.cpp": "552b2608d61805efa731d6d1f3c267c2645ab165d52cd5e7a3d686d2ece57501",
+    "generated/rt_nonfinite.cpp": "426aa0d74db70750ad0eb715f2d5e06ec6babe7196de3e88f822f53bee426602",
+    "include/avanti_att_c_api.h": "b09f03ca0481241648b8aa7355c28a7327ef7401d3793681f9b6fc79de38e57d",
+    "include/PX4Controller_ertmodel0827.h": "ccd9880bdfdb81190cf7ac3ff30867ca23eaf12bf9ac7339c59d62084aa6217a",
+    "include/PX4Controller_ertmodel0827_private.h": "1509e6f5bb02475c807ba1addb130e9b6a1a067e8f4a0270ee8787bb8b4766c1",
+    "include/PX4Controller_ertmodel0827_types.h": "75fb232120fb5599f96687b3fd0127375b2934c2a064a5e24e59711525617e1f",
+    "include/rtGetInf.h": "9a72e437ea6d387b0ab1c77ce0f0c6a697d6d72c898489ff703573ffe521700c",
+    "include/rtGetNaN.h": "f460339be7ee2e66db8671f352f1405c72a74bf04f9c8533bde68a1eab1c3c23",
+    "include/rtmodel.h": "e8d449a8d66d2170337c4174d9488c7af803ee9345de78e48e4c033ff613e34a",
+    "include/rtwtypes.h": "16daea5eda0e2f33ebcfda39b5bd735f1c79699bf1a41fe96f464f26106e02d7",
+    "include/rtw_continuous.h": "f18dbd82bc76f3501d0155b0dd7ae0d2624b0cc811b652afd2f94f09cd577016",
+    "include/rtw_solver.h": "d63bf0569685a80b36d8c5afc55d0490827cb2699b8a46e75a915c10974c400e",
+    "include/rt_assert.h": "53c2a393475dd9ceec90b57f2f8326f42ca52d7b362178c844757ecccd36e431",
+    "include/rt_nonfinite.h": "0d6e065bf0adb1daa5a01cac88c248200b889d0a707232784beac581b85ebded",
+    "wrapper/avanti_att_c_api.cpp": "5599a81b1893b5148febe0b0c196faa937d84579ff36004c2766d6d49ee4e91a",
+    "wrapper/avanti_att_c_api.h": "b09f03ca0481241648b8aa7355c28a7327ef7401d3793681f9b6fc79de38e57d"
+  }
+}

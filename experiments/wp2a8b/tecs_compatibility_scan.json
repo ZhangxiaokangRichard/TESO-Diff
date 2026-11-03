@@ -1,0 +1,637 @@
+{
+  "budget": 12,
+  "seconds_per_trial": 45,
+  "results": [
+    {
+      "metrics": {
+        "index": 3,
+        "trim": -2,
+        "balance_kp": 0.6,
+        "throttle_kp": 0.15,
+        "alt_rmse": 0.4015493069632347,
+        "ias_rmse": 0.12102689636263837,
+        "pitch_std_deg": 0.007745559496128615,
+        "cmd_step_deg": 1.393748881586191e-05,
+        "cost": 0.76851671328803
+      },
+      "config": {
+        "outer": {
+          "l1": {
+            "npfg_enabled": true,
+            "period_s": 11.913220346584133,
+            "damping": 0.6186367698924958,
+            "l1_dist_min_m": 20.0,
+            "l1_dist_max_m": 300.0,
+            "a_cmd_limit_mps2": 15.0,
+            "circle_kr": 0.6965681996324362,
+            "circle_kv": 0.9225083326884499
+          },
+          "coordinated_turn": {
+            "bank_limit_deg": 35.0,
+            "bank_rate_limit_degps": 15.0,
+            "dt": 0.02
+          },
+          "tecs": {
+            "dt": 0.02,
+            "throttle_trim": 0.5237112533716315,
+            "theta_trim_deg": -2,
+            "energy_kp": 0.3,
+            "throttle_kp": 0.15,
+            "throttle_ki": 0.04,
+            "airspeed_kp": 0.4,
+            "airspeed_ki": 0.03,
+            "height_kp": 0.15,
+            "balance_kp": 0.6,
+            "balance_ki": 0.05,
+            "gamma_ff_gain": 0.770883373712698,
+            "bank_comp_gain": 0.1,
+            "climb_sp_limit_mps": 5.0,
+            "gamma_limit_deg": 20.0,
+            "v_dot_limit_mps2": 3.0,
+            "theta_limit_deg": 20.0,
+            "tas_derivative_tau": 0.2
+          }
+        }
+      }
+    },
+    {
+      "metrics": {
+        "index": 1,
+        "trim": -2,
+        "balance_kp": 0.3,
+        "throttle_kp": 0.15,
+        "alt_rmse": 0.39686878316551194,
+        "ias_rmse": 0.12305529567170083,
+        "pitch_std_deg": 0.012266900290680515,
+        "cmd_step_deg": 2.9041481950237255e-05,
+        "cost": 0.772197161807905
+      },
+      "config": {
+        "outer": {
+          "l1": {
+            "npfg_enabled": true,
+            "period_s": 11.913220346584133,
+            "damping": 0.6186367698924958,
+            "l1_dist_min_m": 20.0,
+            "l1_dist_max_m": 300.0,
+            "a_cmd_limit_mps2": 15.0,
+            "circle_kr": 0.6965681996324362,
+            "circle_kv": 0.9225083326884499
+          },
+          "coordinated_turn": {
+            "bank_limit_deg": 35.0,
+            "bank_rate_limit_degps": 15.0,
+            "dt": 0.02
+          },
+          "tecs": {
+            "dt": 0.02,
+            "throttle_trim": 0.5237112533716315,
+            "theta_trim_deg": -2,
+            "energy_kp": 0.3,
+            "throttle_kp": 0.15,
+            "throttle_ki": 0.04,
+            "airspeed_kp": 0.4,
+            "airspeed_ki": 0.03,
+            "height_kp": 0.15,
+            "balance_kp": 0.3,
+            "balance_ki": 0.05,
+            "gamma_ff_gain": 0.770883373712698,
+            "bank_comp_gain": 0.1,
+            "climb_sp_limit_mps": 5.0,
+            "gamma_limit_deg": 20.0,
+            "v_dot_limit_mps2": 3.0,
+            "theta_limit_deg": 20.0,
+            "tas_derivative_tau": 0.2
+          }
+        }
+      }
+    },
+    {
+      "metrics": {
+        "index": 7,
+        "trim": 0,
+        "balance_kp": 0.6,
+        "throttle_kp": 0.15,
+        "alt_rmse": 0.3726559062484775,
+        "ias_rmse": 0.1414561711849684,
+        "pitch_std_deg": 0.016647983131253836,
+        "cmd_step_deg": 6.23527050778696e-05,
+        "cost": 0.8054107640740874
+      },
+      "config": {
+        "outer": {
+          "l1": {
+            "npfg_enabled": true,
+            "period_s": 11.913220346584133,
+            "damping": 0.6186367698924958,
+            "l1_dist_min_m": 20.0,
+            "l1_dist_max_m": 300.0,
+            "a_cmd_limit_mps2": 15.0,
+            "circle_kr": 0.6965681996324362,
+            "circle_kv": 0.9225083326884499
+          },
+          "coordinated_turn": {
+            "bank_limit_deg": 35.0,
+            "bank_rate_limit_degps": 15.0,
+            "dt": 0.02
+          },
+          "tecs": {
+            "dt": 0.02,
+            "throttle_trim": 0.5237112533716315,
+            "theta_trim_deg": 0,
+            "energy_kp": 0.3,
+            "throttle_kp": 0.15,
+            "throttle_ki": 0.04,
+            "airspeed_kp": 0.4,
+            "airspeed_ki": 0.03,
+            "height_kp": 0.15,
+            "balance_kp": 0.6,
+            "balance_ki": 0.05,
+            "gamma_ff_gain": 0.770883373712698,
+            "bank_comp_gain": 0.1,
+            "climb_sp_limit_mps": 5.0,
+            "gamma_limit_deg": 20.0,
+            "v_dot_limit_mps2": 3.0,
+            "theta_limit_deg": 20.0,
+            "tas_derivative_tau": 0.2
+          }
+        }
+      }
+    },
+    {
+      "metrics": {
+        "index": 5,
+        "trim": 0,
+        "balance_kp": 0.3,
+        "throttle_kp": 0.15,
+        "alt_rmse": 0.3390591990806603,
+        "ias_rmse": 0.16884634122297443,
+        "pitch_std_deg": 0.031436124237679816,
+        "cmd_step_deg": 0.00010273888160566216,
+        "cost": 0.8614190237500291
+      },
+      "config": {
+        "outer": {
+          "l1": {
+            "npfg_enabled": true,
+            "period_s": 11.913220346584133,
+            "damping": 0.6186367698924958,
+            "l1_dist_min_m": 20.0,
+            "l1_dist_max_m": 300.0,
+            "a_cmd_limit_mps2": 15.0,
+            "circle_kr": 0.6965681996324362,
+            "circle_kv": 0.9225083326884499
+          },
+          "coordinated_turn": {
+            "bank_limit_deg": 35.0,
+            "bank_rate_limit_degps": 15.0,
+            "dt": 0.02
+          },
+          "tecs": {
+            "dt": 0.02,
+            "throttle_trim": 0.5237112533716315,
+            "theta_trim_deg": 0,
+            "energy_kp": 0.3,
+            "throttle_kp": 0.15,
+            "throttle_ki": 0.04,
+            "airspeed_kp": 0.4,
+            "airspeed_ki": 0.03,
+            "height_kp": 0.15,
+            "balance_kp": 0.3,
+            "balance_ki": 0.05,
+            "gamma_ff_gain": 0.770883373712698,
+            "bank_comp_gain": 0.1,
+            "climb_sp_limit_mps": 5.0,
+            "gamma_limit_deg": 20.0,
+            "v_dot_limit_mps2": 3.0,
+            "theta_limit_deg": 20.0,
+            "tas_derivative_tau": 0.2
+          }
+        }
+      }
+    },
+    {
+      "metrics": {
+        "index": 11,
+        "trim": 2,
+        "balance_kp": 0.6,
+        "throttle_kp": 0.15,
+        "alt_rmse": 0.7553852682714823,
+        "ias_rmse": 0.06257248282947342,
+        "pitch_std_deg": 0.03441995273618169,
+        "cmd_step_deg": 0.00019341527034529726,
+        "cost": 0.9605061083983388
+      },
+      "config": {
+        "outer": {
+          "l1": {
+            "npfg_enabled": true,
+            "period_s": 11.913220346584133,
+            "damping": 0.6186367698924958,
+            "l1_dist_min_m": 20.0,
+            "l1_dist_max_m": 300.0,
+            "a_cmd_limit_mps2": 15.0,
+            "circle_kr": 0.6965681996324362,
+            "circle_kv": 0.9225083326884499
+          },
+          "coordinated_turn": {
+            "bank_limit_deg": 35.0,
+            "bank_rate_limit_degps": 15.0,
+            "dt": 0.02
+          },
+          "tecs": {
+            "dt": 0.02,
+            "throttle_trim": 0.5237112533716315,
+            "theta_trim_deg": 2,
+            "energy_kp": 0.3,
+            "throttle_kp": 0.15,
+            "throttle_ki": 0.04,
+            "airspeed_kp": 0.4,
+            "airspeed_ki": 0.03,
+            "height_kp": 0.15,
+            "balance_kp": 0.6,
+            "balance_ki": 0.05,
+            "gamma_ff_gain": 0.770883373712698,
+            "bank_comp_gain": 0.1,
+            "climb_sp_limit_mps": 5.0,
+            "gamma_limit_deg": 20.0,
+            "v_dot_limit_mps2": 3.0,
+            "theta_limit_deg": 20.0,
+            "tas_derivative_tau": 0.2
+          }
+        }
+      }
+    },
+    {
+      "metrics": {
+        "index": 9,
+        "trim": 2,
+        "balance_kp": 0.3,
+        "throttle_kp": 0.15,
+        "alt_rmse": 0.9613766918541071,
+        "ias_rmse": 0.11301140064781254,
+        "pitch_std_deg": 0.03699784463163217,
+        "cmd_step_deg": 0.00018568746123790217,
+        "cost": 1.3190955035745986
+      },
+      "config": {
+        "outer": {
+          "l1": {
+            "npfg_enabled": true,
+            "period_s": 11.913220346584133,
+            "damping": 0.6186367698924958,
+            "l1_dist_min_m": 20.0,
+            "l1_dist_max_m": 300.0,
+            "a_cmd_limit_mps2": 15.0,
+            "circle_kr": 0.6965681996324362,
+            "circle_kv": 0.9225083326884499
+          },
+          "coordinated_turn": {
+            "bank_limit_deg": 35.0,
+            "bank_rate_limit_degps": 15.0,
+            "dt": 0.02
+          },
+          "tecs": {
+            "dt": 0.02,
+            "throttle_trim": 0.5237112533716315,
+            "theta_trim_deg": 2,
+            "energy_kp": 0.3,
+            "throttle_kp": 0.15,
+            "throttle_ki": 0.04,
+            "airspeed_kp": 0.4,
+            "airspeed_ki": 0.03,
+            "height_kp": 0.15,
+            "balance_kp": 0.3,
+            "balance_ki": 0.05,
+            "gamma_ff_gain": 0.770883373712698,
+            "bank_comp_gain": 0.1,
+            "climb_sp_limit_mps": 5.0,
+            "gamma_limit_deg": 20.0,
+            "v_dot_limit_mps2": 3.0,
+            "theta_limit_deg": 20.0,
+            "tas_derivative_tau": 0.2
+          }
+        }
+      }
+    },
+    {
+      "metrics": {
+        "index": 0,
+        "trim": -2,
+        "balance_kp": 0.3,
+        "throttle_kp": 0.06,
+        "alt_rmse": 0.9947515516405594,
+        "ias_rmse": 0.17943839885143253,
+        "pitch_std_deg": 0.00847929863033171,
+        "cmd_step_deg": 1.9982569401382828e-05,
+        "cost": 1.5373263800794243
+      },
+      "config": {
+        "outer": {
+          "l1": {
+            "npfg_enabled": true,
+            "period_s": 11.913220346584133,
+            "damping": 0.6186367698924958,
+            "l1_dist_min_m": 20.0,
+            "l1_dist_max_m": 300.0,
+            "a_cmd_limit_mps2": 15.0,
+            "circle_kr": 0.6965681996324362,
+            "circle_kv": 0.9225083326884499
+          },
+          "coordinated_turn": {
+            "bank_limit_deg": 35.0,
+            "bank_rate_limit_degps": 15.0,
+            "dt": 0.02
+          },
+          "tecs": {
+            "dt": 0.02,
+            "throttle_trim": 0.5237112533716315,
+            "theta_trim_deg": -2,
+            "energy_kp": 0.3,
+            "throttle_kp": 0.06,
+            "throttle_ki": 0.04,
+            "airspeed_kp": 0.4,
+            "airspeed_ki": 0.03,
+            "height_kp": 0.15,
+            "balance_kp": 0.3,
+            "balance_ki": 0.05,
+            "gamma_ff_gain": 0.770883373712698,
+            "bank_comp_gain": 0.1,
+            "climb_sp_limit_mps": 5.0,
+            "gamma_limit_deg": 20.0,
+            "v_dot_limit_mps2": 3.0,
+            "theta_limit_deg": 20.0,
+            "tas_derivative_tau": 0.2
+          }
+        }
+      }
+    },
+    {
+      "metrics": {
+        "index": 6,
+        "trim": 0,
+        "balance_kp": 0.6,
+        "throttle_kp": 0.06,
+        "alt_rmse": 0.981617430188352,
+        "ias_rmse": 0.20529043122395282,
+        "pitch_std_deg": 0.01858171459329702,
+        "cmd_step_deg": 6.844317825773404e-05,
+        "cost": 1.6068480243351169
+      },
+      "config": {
+        "outer": {
+          "l1": {
+            "npfg_enabled": true,
+            "period_s": 11.913220346584133,
+            "damping": 0.6186367698924958,
+            "l1_dist_min_m": 20.0,
+            "l1_dist_max_m": 300.0,
+            "a_cmd_limit_mps2": 15.0,
+            "circle_kr": 0.6965681996324362,
+            "circle_kv": 0.9225083326884499
+          },
+          "coordinated_turn": {
+            "bank_limit_deg": 35.0,
+            "bank_rate_limit_degps": 15.0,
+            "dt": 0.02
+          },
+          "tecs": {
+            "dt": 0.02,
+            "throttle_trim": 0.5237112533716315,
+            "theta_trim_deg": 0,
+            "energy_kp": 0.3,
+            "throttle_kp": 0.06,
+            "throttle_ki": 0.04,
+            "airspeed_kp": 0.4,
+            "airspeed_ki": 0.03,
+            "height_kp": 0.15,
+            "balance_kp": 0.6,
+            "balance_ki": 0.05,
+            "gamma_ff_gain": 0.770883373712698,
+            "bank_comp_gain": 0.1,
+            "climb_sp_limit_mps": 5.0,
+            "gamma_limit_deg": 20.0,
+            "v_dot_limit_mps2": 3.0,
+            "theta_limit_deg": 20.0,
+            "tas_derivative_tau": 0.2
+          }
+        }
+      }
+    },
+    {
+      "metrics": {
+        "index": 4,
+        "trim": 0,
+        "balance_kp": 0.3,
+        "throttle_kp": 0.06,
+        "alt_rmse": 0.9211747085935291,
+        "ias_rmse": 0.23562680009278028,
+        "pitch_std_deg": 0.037569984765850356,
+        "cmd_step_deg": 0.00011658991944122455,
+        "cost": 1.6469566911742364
+      },
+      "config": {
+        "outer": {
+          "l1": {
+            "npfg_enabled": true,
+            "period_s": 11.913220346584133,
+            "damping": 0.6186367698924958,
+            "l1_dist_min_m": 20.0,
+            "l1_dist_max_m": 300.0,
+            "a_cmd_limit_mps2": 15.0,
+            "circle_kr": 0.6965681996324362,
+            "circle_kv": 0.9225083326884499
+          },
+          "coordinated_turn": {
+            "bank_limit_deg": 35.0,
+            "bank_rate_limit_degps": 15.0,
+            "dt": 0.02
+          },
+          "tecs": {
+            "dt": 0.02,
+            "throttle_trim": 0.5237112533716315,
+            "theta_trim_deg": 0,
+            "energy_kp": 0.3,
+            "throttle_kp": 0.06,
+            "throttle_ki": 0.04,
+            "airspeed_kp": 0.4,
+            "airspeed_ki": 0.03,
+            "height_kp": 0.15,
+            "balance_kp": 0.3,
+            "balance_ki": 0.05,
+            "gamma_ff_gain": 0.770883373712698,
+            "bank_comp_gain": 0.1,
+            "climb_sp_limit_mps": 5.0,
+            "gamma_limit_deg": 20.0,
+            "v_dot_limit_mps2": 3.0,
+            "theta_limit_deg": 20.0,
+            "tas_derivative_tau": 0.2
+          }
+        }
+      }
+    },
+    {
+      "metrics": {
+        "index": 10,
+        "trim": 2,
+        "balance_kp": 0.6,
+        "throttle_kp": 0.06,
+        "alt_rmse": 1.3255258896612765,
+        "ias_rmse": 0.13731091173669793,
+        "pitch_std_deg": 0.04523974309965006,
+        "cmd_step_deg": 0.00021556396948931993,
+        "cost": 1.7602940603906847
+      },
+      "config": {
+        "outer": {
+          "l1": {
+            "npfg_enabled": true,
+            "period_s": 11.913220346584133,
+            "damping": 0.6186367698924958,
+            "l1_dist_min_m": 20.0,
+            "l1_dist_max_m": 300.0,
+            "a_cmd_limit_mps2": 15.0,
+            "circle_kr": 0.6965681996324362,
+            "circle_kv": 0.9225083326884499
+          },
+          "coordinated_turn": {
+            "bank_limit_deg": 35.0,
+            "bank_rate_limit_degps": 15.0,
+            "dt": 0.02
+          },
+          "tecs": {
+            "dt": 0.02,
+            "throttle_trim": 0.5237112533716315,
+            "theta_trim_deg": 2,
+            "energy_kp": 0.3,
+            "throttle_kp": 0.06,
+            "throttle_ki": 0.04,
+            "airspeed_kp": 0.4,
+            "airspeed_ki": 0.03,
+            "height_kp": 0.15,
+            "balance_kp": 0.6,
+            "balance_ki": 0.05,
+            "gamma_ff_gain": 0.770883373712698,
+            "bank_comp_gain": 0.1,
+            "climb_sp_limit_mps": 5.0,
+            "gamma_limit_deg": 20.0,
+            "v_dot_limit_mps2": 3.0,
+            "theta_limit_deg": 20.0,
+            "tas_derivative_tau": 0.2
+          }
+        }
+      }
+    },
+    {
+      "metrics": {
+        "index": 8,
+        "trim": 2,
+        "balance_kp": 0.3,
+        "throttle_kp": 0.06,
+        "alt_rmse": 1.4855836379513199,
+        "ias_rmse": 0.08749740015858061,
+        "pitch_std_deg": 0.05180036634372953,
+        "cmd_step_deg": 0.0002346483417640611,
+        "cost": 1.7742106699406905
+      },
+      "config": {
+        "outer": {
+          "l1": {
+            "npfg_enabled": true,
+            "period_s": 11.913220346584133,
+            "damping": 0.6186367698924958,
+            "l1_dist_min_m": 20.0,
+            "l1_dist_max_m": 300.0,
+            "a_cmd_limit_mps2": 15.0,
+            "circle_kr": 0.6965681996324362,
+            "circle_kv": 0.9225083326884499
+          },
+          "coordinated_turn": {
+            "bank_limit_deg": 35.0,
+            "bank_rate_limit_degps": 15.0,
+            "dt": 0.02
+          },
+          "tecs": {
+            "dt": 0.02,
+            "throttle_trim": 0.5237112533716315,
+            "theta_trim_deg": 2,
+            "energy_kp": 0.3,
+            "throttle_kp": 0.06,
+            "throttle_ki": 0.04,
+            "airspeed_kp": 0.4,
+            "airspeed_ki": 0.03,
+            "height_kp": 0.15,
+            "balance_kp": 0.3,
+            "balance_ki": 0.05,
+            "gamma_ff_gain": 0.770883373712698,
+            "bank_comp_gain": 0.1,
+            "climb_sp_limit_mps": 5.0,
+            "gamma_limit_deg": 20.0,
+            "v_dot_limit_mps2": 3.0,
+            "theta_limit_deg": 20.0,
+            "tas_derivative_tau": 0.2
+          }
+        }
+      }
+    },
+    {
+      "metrics": {
+        "index": 2,
+        "trim": -2,
+        "balance_kp": 0.6,
+        "throttle_kp": 0.06,
+        "alt_rmse": 0.7537989744228861,
+        "ias_rmse": 0.22145959399242093,
+        "pitch_std_deg": 4.831172650940062,
+        "cmd_step_deg": 0.7848857279905078,
+        "cost": 4.618649809860688
+      },
+      "config": {
+        "outer": {
+          "l1": {
+            "npfg_enabled": true,
+            "period_s": 11.913220346584133,
+            "damping": 0.6186367698924958,
+            "l1_dist_min_m": 20.0,
+            "l1_dist_max_m": 300.0,
+            "a_cmd_limit_mps2": 15.0,
+            "circle_kr": 0.6965681996324362,
+            "circle_kv": 0.9225083326884499
+          },
+          "coordinated_turn": {
+            "bank_limit_deg": 35.0,
+            "bank_rate_limit_degps": 15.0,
+            "dt": 0.02
+          },
+          "tecs": {
+            "dt": 0.02,
+            "throttle_trim": 0.5237112533716315,
+            "theta_trim_deg": -2,
+            "energy_kp": 0.3,
+            "throttle_kp": 0.06,
+            "throttle_ki": 0.04,
+            "airspeed_kp": 0.4,
+            "airspeed_ki": 0.03,
+            "height_kp": 0.15,
+            "balance_kp": 0.6,
+            "balance_ki": 0.05,
+            "gamma_ff_gain": 0.770883373712698,
+            "bank_comp_gain": 0.1,
+            "climb_sp_limit_mps": 5.0,
+            "gamma_limit_deg": 20.0,
+            "v_dot_limit_mps2": 3.0,
+            "theta_limit_deg": 20.0,
+            "tas_derivative_tau": 0.2
+          }
+        }
+      }
+    }
+  ],
+  "selection": {
+    "selected_grid_index": 1,
+    "short_window_lowest_cost_grid_index": 3,
+    "reason": "balance_kp=0.6 short-window winner oscillated in the 400s heading sequence; selected nearby-cost balance_kp=0.3 after long-sequence validation",
+    "selected_config": "candidate_config.json",
+    "long_sequence_probe": "compatibility_probes/balance_06"
+  }
+}

@@ -24,10 +24,12 @@ sys.path.insert(0, str(PROJECT_ROOT / "python"))
 
 import yaml  # noqa: E402
 
-from bindings.avanti import AvantiInput, AvantiLibrary  # noqa: E402
+from bindings.avanti import AvantiInput, AvantiLibrary, default_library_path  # noqa: E402
 
 REQUIRED_CONFIGS = [
     "config/aircraft/avanti2.yaml",
+    "config/aircraft/avanti2_att.yaml",
+    "config/controller/attitude_runtime.yaml",
     "config/controller/controller.yaml",
     "config/task/circle.yaml",
     "config/task/figure8.yaml",
@@ -78,13 +80,13 @@ def main() -> int:
     parser.add_argument(
         "--library",
         type=Path,
-        default=PROJECT_ROOT / "runtime" / "fixedwing" / "lib" / "libavanti2.so",
+        default=None,
     )
     parser.add_argument("--task", choices=["circle", "figure8", "racetrack"], default=None)
     args = parser.parse_args()
 
     check_configs()
-    trim_smoke(args.library)
+    trim_smoke(args.library or default_library_path())
 
     if args.task:
         raise SystemExit(

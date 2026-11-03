@@ -132,3 +132,29 @@ class ActuatorCommand:
                 raise ValueError(f"{name} exceeds normalized range [-1,1]")
         if np.any(self.throttle < 0.0) or np.any(self.throttle > 1.0):
             raise ValueError("throttle exceeds [0,1]")
+
+
+@dataclass
+class AttitudeCommand:
+    """Generated-attitude runtime command. No fabricated surface channels."""
+    phi: np.ndarray
+    theta: np.ndarray
+    throttle: np.ndarray
+
+    def __post_init__(self):
+        _check_batch(self.phi, self.theta, self.throttle)
+        if not all(np.isfinite(x).all() for x in (self.phi, self.theta, self.throttle)):
+            raise ValueError("nonfinite attitude command")
+        if np.any(np.abs(self.phi)>=np.pi/2) or np.any(np.abs(self.theta)>=np.pi/2):
+            raise ValueError("attitude command outside supported Euler range")
+        if np.any((self.throttle<0)|(self.throttle>1)):
+            raise ValueError("throttle outside [0,1]")
+
+    def to_inputs(self, wind_flat_earth_mps=None):
+        from ..bindings.avanti_att import AvantiAttInput
+        batch=len(self.phi)
+        wind=np.zeros((batch,3)) if wind_flat_earth_mps is None else np.asarray(wind_flat_earth_mps)
+        if wind.shape!=(batch,3) or not np.isfinite(wind).all():
+            raise ValueError("wind must be finite [B,3]")
+        return [AvantiAttInput(float(self.phi[i]),float(self.theta[i]),float(self.throttle[i])).set_wind(wind[i])
+                for i in range(batch)]

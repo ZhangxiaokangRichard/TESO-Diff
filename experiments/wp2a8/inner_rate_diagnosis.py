@@ -356,7 +356,7 @@ def part3_full_trial(cfg: dict, variant: dict, label: str,
                      seconds: float = 400.0) -> dict:
     """完整 T15 8 字闭环试验（真实外环 + 真实 plant），只改内环滚转通道。"""
     from python.controller import (  # noqa: E402
-        FlightController,
+        LegacySurfaceFlightController as FlightController,
         HeadingCommand,
         PolylinePathFollower,
     )

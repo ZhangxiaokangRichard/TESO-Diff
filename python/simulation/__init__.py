@@ -8,3 +8,5 @@ from .harness import ClosedLoopHarness  # noqa: F401
 from .wind_stub import WindStub  # noqa: F401
 
 __all__ = ["ClosedLoopHarness", "WindStub"]
+
+from .attitude_fleet import AttitudeFleet  # noqa: F401

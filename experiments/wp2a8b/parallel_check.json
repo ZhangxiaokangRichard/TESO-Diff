@@ -1,0 +1,13 @@
+{
+  "instances": 4,
+  "seconds": 30,
+  "workers": 4,
+  "max_abs_difference": 0.0,
+  "serial_wall_s": 0.9143226999876788,
+  "parallel_wall_s": 1.2648897000035504,
+  "speedup": 0.7228477708254818,
+  "heterogeneous_commands": true,
+  "independent_outer_states": true,
+  "native_gain_writes": 0,
+  "mechanism": "batched NumPy outer loop + persistent ThreadPoolExecutor native ticks"
+}

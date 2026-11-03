@@ -36,33 +36,5 @@ foreach(required_file IN LISTS AVANTI_MODEL_SOURCES)
 endforeach()
 
 add_library(avanti2 SHARED ${AVANTI_MODEL_SOURCES})
-target_compile_features(avanti2 PUBLIC cxx_std_11)
-target_compile_definitions(avanti2 PRIVATE AVANTI_BUILDING_DLL)
-target_include_directories(avanti2
-    PUBLIC
-        "$<BUILD_INTERFACE:${AVANTI_INCLUDE_DIR}>"
-        "$<INSTALL_INTERFACE:include>")
-set_target_properties(avanti2 PROPERTIES
-    OUTPUT_NAME "avanti2"
-    POSITION_INDEPENDENT_CODE ON
-    CXX_VISIBILITY_PRESET hidden
-    VISIBILITY_INLINES_HIDDEN YES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/dist"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/dist"
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/dist")
-
-if(WIN32)
-    set_target_properties(avanti2 PROPERTIES PREFIX "")
-endif()
-
-if(MINGW)
-    target_link_options(avanti2 PRIVATE -static -static-libgcc -static-libstdc++)
-endif()
-
-include(GNUInstallDirs)
-install(TARGETS avanti2
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(FILES "${AVANTI_INCLUDE_DIR}/avanti_c_api.h"
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+avanti_configure_runtime(avanti2 AVANTI_BUILDING_DLL "${AVANTI_FIXEDWING_ROOT}")
+install(FILES "${AVANTI_INCLUDE_DIR}/avanti_c_api.h" DESTINATION include)

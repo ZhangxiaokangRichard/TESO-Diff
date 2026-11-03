@@ -1,0 +1,46 @@
+{
+  "build_date": "2026-11-03",
+  "windows_toolchain": "MinGW GCC 8.1.0, x86_64",
+  "linux_toolchain": "Zig 0.13.0 / Clang 18.1.6, Windows cross-build x86_64-linux-gnu.2.35",
+  "linux_runtime_tested": false,
+  "windows_ctest_passed": true,
+  "artifacts": [
+    {
+      "file": "runtime\\fixedwing\\lib\\avanti2.dll",
+      "bytes": 317312,
+      "sha256": "b21220cabf26d9a863491f68174435fc0b4b5e6c494f7705a433d4287c67500a",
+      "format": "PE32+ x86_64 DLL"
+    },
+    {
+      "file": "runtime\\fixedwing\\lib\\libavanti2.so",
+      "bytes": 1489680,
+      "sha256": "c5629617940dca9cc9dd17936816f10764d7e5f796a4aa9b53002f2364f7be8a",
+      "format": "ELF64 x86_64 shared object",
+      "needed": [
+        "libm.so.6",
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "abi_exports": [
+        "avanti_abi_version",
+        "avanti_advance_to",
+        "avanti_create",
+        "avanti_destroy",
+        "avanti_get_fixed_step",
+        "avanti_get_next_tick_time",
+        "avanti_input_size",
+        "avanti_output_size",
+        "avanti_reset",
+        "avanti_tick"
+      ],
+      "glibc_versions": [
+        "GLIBC_2.2.5",
+        "GLIBC_2.3",
+        "GLIBC_2.14",
+        "GLIBC_2.16",
+        "GLIBC_2.29",
+        "GLIBC_2.34"
+      ]
+    }
+  ]
+}

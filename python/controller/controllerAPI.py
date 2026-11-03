@@ -1,30 +1,10 @@
-"""飞行控制器标准指令接口（WP2A-8 最终步骤，API 层）。
+"""WP2A-8b action API for the generated attitude-loop aircraft.
 
-FlightController 包装 AvantiController，提供两种高层控制模式：
-
-    1. LoiterCommand（指点盘旋）
-       - 输入：期望圆心 NEU 坐标、期望空速、盘旋半径（≥ MIN_LOITER_RADIUS）
-       - 行为：飞向圆心并在接近后保持圆形航迹；L1 圆形制导自动检测
-
-    2. HeadingCommand（直飞模式）
-       - 输入：期望空速、航迹倾角 gamma（rad）、航迹偏角 chi（rad，从北顺时针）
-       - 行为：按指定空速/gamma/chi 飞行；
-              TECS 用动态高度设定点 alt_cmd = h + V·sin(γ)/kp_h 等效 gamma 指令；
-              L1 跟踪从当前位置在 chi 方向生成的前视直线路径。
-
-使用::
-
-    cfg = load_tuned()
-    fc = FlightController(cfg)
-    fc.reset(batch=1)
-
-    # 指点盘旋
-    fc.command_loiter(LoiterCommand(center=(0.0, 200.0, 1000.0), radius=60.0, airspeed=16.0))
-    actuator = fc.step(obs)   # obs.neu_pos 必须有效
-
-    # 直飞模式
-    fc.command_heading(HeadingCommand(airspeed=16.0, gamma=0.0, chi=0.0))
-    actuator = fc.step(obs)   # 每 step 动态重新生成前视路径
+FlightController: batched NPFG/TECS -> AttitudeCommand (rad, rad, throttle).
+HeadingCommand keeps IAS, ground gamma/chi and an absolute activation time.
+LoiterCommand approaches the NEU center and latches circle capture within 2R.
+LegacySurfaceFlightController retains the historical surface-output backend.
+Snapshots here cover the Python outer loop only, not the C++ plant state.
 """
 
 from __future__ import annotations
@@ -35,7 +15,9 @@ from typing import Optional
 import numpy as np
 
 from .avanti_controller import AvantiController
-from .types import ActuatorCommand, ControlObservation, ControlReference
+from .types import ActuatorCommand, AttitudeCommand, ControlObservation, ControlReference
+from .outer import OuterLoop
+import copy
 
 MIN_LOITER_RADIUS: float = 30.0   # m，最小盘旋半径
 _HEADING_N_PTS: int = 20          # 直飞模式前视路径点数
@@ -54,6 +36,7 @@ class LoiterCommand:
     airspeed: float                     # 期望指示空速，m/s
     radius: float                       # 盘旋半径，m
     timestamp: float = 0.0             # 指令时间戳，s
+    direction: int = 1                  # +1 North->East, -1 opposite
 
 
 @dataclass
@@ -384,7 +367,7 @@ class PolylinePathFollower:
         return self._point_and_tangent(progress_m)[0]
 
 
-class FlightController:
+class LegacySurfaceFlightController:
     """高层飞行控制器：包装 AvantiController，提供 Loiter/Heading 两种控制模式。
 
     Loiter 模式：command_loiter() 预生成圆形路径，step() 每次传入同一路径；
@@ -567,3 +550,200 @@ def _make_circle(
     east = center_ne[1] + radius * np.sin(theta)
     alt = np.full(n_pts, float(altitude))
     return np.stack([north, east, alt], axis=1)
+
+
+def density_ratio(altitude_m):
+    """Low-speed IAS/EAS conversion using the model's ISA troposphere law.
+
+    The current ABI has no pressure/density sensor; this is an ISA estimate.
+    """
+    h=np.clip(np.asarray(altitude_m,dtype=float),-500,11000)
+    return (1-.0065*h/288.15)**(9.80665/(287.05287*.0065)-1)
+
+
+class FlightController:
+    """Batched action interface -> generated inner-loop attitude commands.
+
+    Commands can target a subset of batch indices; all outer-loop state is
+    per-instance. timestamp is absolute simulation time, including epoch.
+    Call step at 50 Hz. Native handles are managed by AttitudeFleet or caller.
+    """
+    NONE=0
+    HEADING=1
+    LOITER=2
+    APPROACH=0
+    CAPTURE=1
+    HOLD=2
+
+    def __init__(self,cfg=None,min_loiter_radius=MIN_LOITER_RADIUS):
+        if cfg is None:
+            from pathlib import Path
+            import yaml
+            cfg=yaml.safe_load((Path(__file__).resolve().parents[2]/'config/controller/attitude_runtime.yaml').read_text(encoding='utf-8'))
+        self.cfg=copy.deepcopy(cfg)
+        self.outer=OuterLoop(copy.deepcopy(cfg.get('outer',{})))
+        self.dt=float(self.outer.tecs.dt)
+        if not np.isclose(self.dt,.02) or not np.isclose(self.outer.turn.dt,.02):
+            raise ValueError('generated runtime API requires 0.02 s outer updates')
+        if not 0<self.outer.turn.bank_limit<np.pi/2:
+            raise ValueError('bank limit must be strictly between 0 and 90 degrees')
+        self.min_radius=float(min_loiter_radius)
+        if not np.isfinite(self.min_radius) or self.min_radius<=0:
+            raise ValueError('minimum radius must be positive')
+        self.reset()
+
+    def reset(self,batch=1):
+        if not isinstance(batch,int) or batch<1: raise ValueError('positive integer batch required')
+        self.batch=batch
+        self.outer.reset(batch)
+        self._mode=np.zeros(batch,dtype=int)
+        self._phase=np.zeros(batch,dtype=int)
+        self._center=np.zeros((batch,3))
+        self._radius=np.full(batch,self.min_radius)
+        self._requested_radius=self._radius.copy()
+        self._direction=np.ones(batch)
+        self._ias=np.full(batch,16.)
+        self._gamma=np.zeros(batch)
+        self._chi=np.zeros(batch)
+        self._alt_ref=np.full(batch,np.nan)
+        self._pending=[]
+        self._last_submitted=np.full(batch,-np.inf)
+        self._submitted_commands=[None for _ in range(batch)]
+        self._last_time=None
+        self._intermediates={}
+
+    def _indices(self,indices):
+        idx=np.arange(self.batch) if indices is None else np.atleast_1d(np.asarray(indices))
+        if idx.ndim!=1 or idx.dtype.kind not in 'iu' or len(idx)==0:
+            raise ValueError('indices must be a nonempty integer vector')
+        if np.any((idx<0)|(idx>=self.batch)) or len(np.unique(idx))!=len(idx):
+            raise ValueError('batch indices out of range or duplicated')
+        return idx.astype(int)
+
+    def _submit(self,cmd,indices):
+        if not isinstance(cmd,(HeadingCommand,LoiterCommand)):
+            raise TypeError('HeadingCommand or LoiterCommand required')
+        cmd=copy.deepcopy(cmd)
+        if isinstance(cmd,LoiterCommand):
+            center=np.asarray(cmd.center,dtype=float)
+            if center.shape!=(3,):raise ValueError('center must be NEU [3]')
+            cmd.center=tuple(center)
+        idx=self._indices(indices)
+        # Path adapters may return the same held, timestamped action at 50 Hz.
+        # Re-submitting it is idempotent; it must not re-anchor the height path.
+        duplicate=np.array([cmd==self._submitted_commands[i] for i in idx])
+        idx=idx[~duplicate]
+        if not len(idx):return
+        values=[cmd.airspeed,cmd.timestamp]
+        if isinstance(cmd,LoiterCommand):
+            if np.asarray(cmd.center).shape!=(3,):raise ValueError('center must be NEU [3]')
+            values.extend([*cmd.center,cmd.radius])
+            if cmd.radius<=0 or cmd.direction not in (-1,1):raise ValueError('positive radius and direction +/-1 required')
+        else:
+            values.extend([cmd.gamma,cmd.chi])
+            if abs(cmd.gamma)>self.outer.tecs.gamma_limit:raise ValueError('gamma exceeds TECS operating range')
+        if not np.isfinite(values).all() or cmd.airspeed<=0:raise ValueError('finite command with positive IAS required')
+        if np.any(cmd.timestamp<self._last_submitted[idx]-1e-9):raise ValueError('command timestamp moved backwards')
+        if self._last_time is not None and cmd.timestamp<self._last_time-1e-9:
+            raise ValueError('command timestamp is before the last control update')
+        self._last_submitted[idx]=cmd.timestamp
+        for i in idx:self._submitted_commands[i]=copy.deepcopy(cmd)
+        self._pending.append((float(cmd.timestamp),idx,copy.deepcopy(cmd)))
+        self._pending.sort(key=lambda item:item[0])
+
+    def command_heading(self,cmd:HeadingCommand,indices=None):
+        self._submit(cmd,indices)
+
+    def command_loiter(self,cmd:LoiterCommand,indices=None):
+        self._submit(cmd,indices)
+
+    def _activate(self,now,obs):
+        keep=[]
+        for timestamp,idx,cmd in self._pending:
+            if timestamp>now+1e-9:
+                keep.append((timestamp,idx,cmd));continue
+            self._ias[idx]=cmd.airspeed
+            if isinstance(cmd,HeadingCommand):
+                fresh=self._mode[idx]!=self.HEADING
+                self._alt_ref[idx[fresh]]=obs.neu_pos[idx[fresh],2]
+                self._gamma[idx]=cmd.gamma
+                self._chi[idx]=_wrap_pi(cmd.chi)
+                self._mode[idx]=self.HEADING
+            else:
+                self._mode[idx]=self.LOITER
+                self._phase[idx]=self.APPROACH
+                self._center[idx]=cmd.center
+                self._requested_radius[idx]=cmd.radius
+                self._radius[idx]=max(cmd.radius,self.min_radius)
+                self._direction[idx]=cmd.direction
+                self._alt_ref[idx]=cmd.center[2]
+        self._pending=keep
+
+    def step(self,obs:ControlObservation,timestamp=None)->AttitudeCommand:
+        if obs.neu_pos is None or obs.neu_vel is None or obs.tas is None:
+            raise ValueError('NEU position/velocity and true airspeed required')
+        if len(obs.phi)!=self.batch:raise ValueError('observation batch mismatch; reset(batch) first')
+        now=(0. if self._last_time is None else self._last_time+self.dt) if timestamp is None else float(timestamp)
+        if not np.isfinite(now):raise ValueError('finite simulation timestamp required')
+        tolerance=max(1e-8,64*np.finfo(float).eps*abs(now))
+        if self._last_time is not None and not np.isclose(now-self._last_time,self.dt,atol=tolerance,rtol=0):
+            raise ValueError('control timestamp must advance exactly 0.02 s')
+        self._activate(now,obs)
+        if np.any(self._mode==self.NONE):raise RuntimeError('every batch instance needs an active command')
+        tas_cmd=self._ias/np.sqrt(density_ratio(obs.neu_pos[:,2]))
+        loiter=self._mode==self.LOITER
+        heading=~loiter
+        # Radius is fixed when commanded except for this conservative IAS->TAS envelope check.
+        feasible_radius=tas_cmd**2/(9.80665*np.tan(self.outer.turn.bank_limit))
+        self._radius=np.maximum(np.maximum(self._requested_radius,self.min_radius),feasible_radius)
+        radial=np.linalg.norm(obs.neu_pos[:,:2]-self._center[:,:2],axis=1)
+        entering=loiter&(self._phase==self.APPROACH)&(radial<=2*self._radius)
+        self._phase[entering]=self.CAPTURE
+        approach=loiter&(self._phase==self.APPROACH)
+        tangent=np.arctan2(obs.neu_pos[:,1]-self._center[:,1],obs.neu_pos[:,0]-self._center[:,0])+self._direction*np.pi/2
+        tangent_error=_wrap_pi(tangent-np.arctan2(obs.neu_vel[:,1],obs.neu_vel[:,0]))
+        close=loiter&(self._phase!=self.APPROACH)&(abs(radial-self._radius)<=.15*self._radius)&(abs(tangent_error)<np.deg2rad(30))
+        self._phase[close]=self.HOLD
+        self._phase[loiter&(self._phase==self.HOLD)&(abs(radial-self._radius)>.3*self._radius)]=self.CAPTURE
+        chi=np.where(approach,np.arctan2(self._center[:,1]-obs.neu_pos[:,1],self._center[:,0]-obs.neu_pos[:,0]),self._chi)
+        altitude=np.where(loiter,self._center[:,2],self._alt_ref)
+        gamma=np.where(heading,self._gamma,0.)
+        reference=ControlReference(tas_cmd,altitude,np.zeros((self.batch,2,3)),gamma_cmd=gamma)
+        a_line,chi_air,_,_=self.outer.l1.heading_guidance(chi,reference,obs)
+        a_circle,chi_circle,radial_error,_=self.outer.l1.circle_guidance(self._center[:,:2],self._radius,self._direction,reference,obs)
+        on_circle=loiter&~approach
+        acceleration=np.where(on_circle,a_circle,a_line)
+        phi=self.outer.turn.step(acceleration,obs)
+        theta,throttle=self.outer.tecs.step(reference,obs)
+        theta=np.clip(theta+self.outer.tecs.bank_compensation(phi),-self.outer.tecs.theta_limit,self.outer.tecs.theta_limit)
+        self._intermediates={
+            'time':np.full(self.batch,now),'phi_cmd':phi.copy(),'theta_cmd':theta.copy(),
+            'throttle_cmd':throttle.copy(),'chi_cmd':np.where(on_circle,chi_circle,chi_air),
+            'chi_ground_cmd':_wrap_pi(np.where(on_circle,
+                np.arctan2(obs.neu_pos[:,1]-self._center[:,1],obs.neu_pos[:,0]-self._center[:,0])+self._direction*np.pi/2,chi)),
+            'gamma_cmd':gamma.copy(),'altitude_cmd':altitude.copy(),'ias_cmd':self._ias.copy(),
+            'tas_cmd':tas_cmd.copy(),'mode':self._mode.copy(),'loiter_phase':self._phase.copy(),
+            'radius_m':self._radius.copy(),'radial_m':radial,'cross_track':np.where(loiter,radial_error,np.nan),
+        }
+        # Advance an independent trajectory reference, never re-anchor to actual height.
+        climb=np.linalg.norm(obs.neu_vel[:,:2],axis=1)*np.tan(gamma)
+        self._alt_ref[heading]+=self.dt*climb[heading]
+        self._last_time=now
+        return AttitudeCommand(phi,theta,throttle)
+
+    def intermediates(self):
+        return copy.deepcopy(self._intermediates)
+
+    def get_snapshot(self):
+        """Outer/action state only. The generated C++ plant has no snapshot ABI."""
+        return copy.deepcopy({'batch':self.batch,'outer':self.outer.get_snapshot(),
+            **{k:v for k,v in self.__dict__.items() if k.startswith('_')}})
+
+    def set_snapshot(self,snap):
+        snap=copy.deepcopy(snap)
+        if snap['batch']!=self.batch:raise ValueError('snapshot batch differs')
+        self.outer.set_snapshot(snap.pop('outer'))
+        snap.pop('batch')
+        for key,value in snap.items():
+            if not key.startswith('_'):raise ValueError('unknown snapshot field')
+            setattr(self,key,value)

@@ -1,0 +1,2 @@
+# Ubuntu entry points must retain Unix newlines on Windows checkouts.
+*.sh text eol=lf

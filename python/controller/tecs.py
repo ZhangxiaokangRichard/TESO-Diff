@@ -103,6 +103,12 @@ class TECSController:
         # ---- 总能量误差与能量变化率 ----
         ste_err = (h_sp - alt) + (v_sp ** 2 - tas ** 2) / (2.0 * self.G)
         ste_rate_sp = self.k_ste * ste_err
+        climb_ff = None
+        if ref.gamma_cmd is not None:
+            # gamma is a ground flight-path inclination, not a pitch angle.
+            gs_horizontal = np.linalg.norm(obs.neu_vel[:, :2], axis=1)
+            climb_ff = gs_horizontal*np.tan(np.clip(ref.gamma_cmd, -self.gamma_limit, self.gamma_limit))
+            ste_rate_sp = ste_rate_sp + climb_ff
 
         # V̇：低通滤波的数值微分（V̇ = (V_k - V_{k-1})/dt → 一阶滤波）
         if self._prev_tas is None:
@@ -138,6 +144,8 @@ class TECSController:
         )
 
         climb_sp = np.clip(self.kp_h * (h_sp - alt), -self.climb_sp_limit, self.climb_sp_limit)
+        if climb_ff is not None:
+            climb_sp = np.clip(climb_sp+climb_ff, -self.climb_sp_limit, self.climb_sp_limit)
         gamma_sp = np.clip(climb_sp / np.maximum(tas, 5.0), -self.gamma_limit, self.gamma_limit)
         gamma = np.clip(np.arcsin(np.clip(climb_f / np.maximum(tas, 5.0), -1.0, 1.0)),
                         -self.gamma_limit, self.gamma_limit)

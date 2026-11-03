@@ -1,4 +1,4 @@
-"""AVANTI2 6DOF 动态库的 ctypes 封装（复用 phase1 `python/avanti.py`）。
+"""AVANTI2两种独立C ABI：舵面输入avanti，以及姿态输入avanti_att。
 
 phase1 已冻结稳定 C ABI（`avanti_c_api.h`，版本 0x00010000）：
 - `AvantiInput` 7 通道：delta_e/a/r（归一化 [-1,1]）、throttle [0,1]、
@@ -7,8 +7,8 @@ phase1 已冻结稳定 C ABI（`avanti_c_api.h`，版本 0x00010000）：
   Euler（deg）、BODY u,v,w / p,q,r / 导数（SI）；
 - 固定步长 dt_plant = 0.02 s（fixed-step ODE4，50 Hz）。
 
-本包不重写 phase1 封装，只做最小路径适配（默认库搜索路径改为
-`runtime/fixedwing/lib` / `build/linux64/dist`）。
+姿态版输入phi/theta(rad)、油门、风，包含生成的姿态环；其14个增益在进程内共享。
+两种封装均按操作系统从各自runtime目录或build/dist中查找库。
 """
 
 from .avanti import (  # noqa: F401
@@ -32,3 +32,10 @@ __all__ = [
     "AvantiOutput",
     "default_library_path",
 ]
+
+from .avanti_att import (  # noqa: F401,E402
+    AVANTI_ATT_ABI_VERSION, AvantiAttError, AvantiAttInput, AvantiAttLibrary,
+    AvantiAttModel, AvantiAttOutput, AvantiAttParams,
+)
+__all__ += ["AVANTI_ATT_ABI_VERSION", "AvantiAttError", "AvantiAttInput",
+            "AvantiAttLibrary", "AvantiAttModel", "AvantiAttOutput", "AvantiAttParams"]

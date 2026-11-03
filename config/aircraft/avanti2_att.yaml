@@ -1,0 +1,61 @@
+# Generated attitude loop + 6DOF. Defaults read from the 2026-11-03 export.
+aircraft:
+  name: avanti2_att_nominal
+  model: PX4Controller_ertmodel0827
+  backend: fixedwing_att
+  abi_version: 65536
+library:
+  windows: runtime/fixedwing_att/lib/avanti2_att.dll
+  linux: runtime/fixedwing_att/lib/libavanti2_att.so
+  python_binding: bindings.avanti_att.AvantiAttLibrary
+plant:
+  dt_plant: 0.02
+  solver: ode4
+  attitude_loop_rate_hz: 50
+input_units:
+  phi_sp_rad: rad, roll Euler attitude setpoint
+  theta_sp_rad: rad, pitch Euler attitude setpoint
+  throttle_01: '[0,1]'
+  wind_flat_earth_mps: Xe/Ye/Ze m/s; Ze down-positive
+output_units:
+  position_ne_alt_m: North/East/Altitude m, Up-positive
+  velocity_ne_up_mps: North/East/Up m/s
+  euler_rpy_deg: deg
+  rates_body_radps: rad/s
+  alpha_beta: rad
+init_state:
+  position_ne_alt_m:
+  - 0.0
+  - 0.0
+  - 100.0
+  velocity_body_mps:
+  - 13.4892
+  - 0.0
+  - 0.09248
+  euler_rpy_deg:
+  - 0.0
+  - 0.39280840518578974
+  - 0.0
+compiled_default_params:
+  p_phi_sp: 6.5
+  p_theta_sp: 6.5
+  fw_rr: 33.0766501559
+  fw_pr: 73.5591994785
+  fw_yr: 5.88724008066
+  omega_sp_p_phi: 2.55548530054
+  omega_sp_i_phi: 17.3911759678
+  omega_sp_d_phi: 0.0
+  omega_sp_p_theta: 37.1730053299
+  omega_sp_i_theta: 18.289049312
+  omega_sp_d_theta: 0.0
+  omega_sp_p_psi: 56.6530807318
+  omega_sp_i_psi: 18.30415489
+  omega_sp_d_psi: 0.0
+parameter_scope: process_shared
+apply_defaults_on_load: false
+capabilities:
+  direct_surface_input: false
+  yaw_angle_setpoint: false
+  surface_telemetry: false
+  state_snapshot: false
+  per_instance_gains: false

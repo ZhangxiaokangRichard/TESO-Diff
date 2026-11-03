@@ -14,18 +14,24 @@ if [[ ! -f "$LIB" ]]; then
     exit 1
 fi
 
-echo "=== [1/4] fixedwing 依赖审计（无 MATLAB） ==="
+echo "=== [1/5] fixedwing 依赖审计（无 MATLAB） ==="
 command python3 tests/regression/test_portable_bundle.py
 
-echo "=== [2/4] 20s 逐样本回归 ==="
+echo "=== [2/5] 20s 逐样本回归 ==="
 command python3 tests/regression/test_ctypes_20s.py --library "$LIB" --seconds 20 --print-every 5
 
-echo "=== [3/4] 多实例并行正确性 ==="
+echo "=== [3/5] 多实例并行正确性 ==="
 command python3 tests/regression/test_ctypes_parallel.py \
     --library "$LIB" --instances 16 --seconds 20 --workers 16
 
-echo "=== [4/4] 生命周期压力测试 ==="
+echo "=== [4/5] 生命周期压力测试 ==="
 command python3 tests/regression/test_ctypes_lifecycle.py \
     --library "$LIB" --warmup 1000 --cycles 5000
 
 echo "=== Phase 2a 冒烟测试全部通过 ==="
+
+ATT_LIB="${2:-runtime/fixedwing_att/lib/libavanti2_att.so}"
+echo "=== [5/5] fixedwing_att ABI / time / reset / gain scope / coexistence ==="
+command python3 tests/regression/test_att_runtime.py --library "$ATT_LIB"
+
+echo "=== Phase 2a ????????????? ==="

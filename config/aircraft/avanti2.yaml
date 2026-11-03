@@ -11,6 +11,7 @@
 # 在 Phase 2b 扩展模型与 ABI（docs/interface.md §7、TESO-Diff_phase1.md §13）。
 
 aircraft:
+  backend: fixedwing
   name: avanti2_nominal
   model: AVANTI2_ertmodel0827
   abi_version: 0x00010000

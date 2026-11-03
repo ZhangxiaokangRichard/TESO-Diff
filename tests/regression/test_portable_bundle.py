@@ -95,6 +95,21 @@ def main() -> int:
     print(f"fixedwing_files={len(files)} unresolved_quoted_includes=0")
     print("absolute_matlab_paths=0 matlab_link_libraries=0")
     print("Fixedwing runtime dependency audit passed")
+    att_root=PROJECT_ROOT / "runtime/fixedwing_att"
+    att_include=att_root / "include"
+    att_files=[p for part in ("include","generated","wrapper") for p in (att_root/part).glob("*") if p.is_file()]
+    assert len(att_files)==19, "Attitude bundle is incomplete"
+    for path in att_files:
+        text=path.read_text(encoding="utf-8",errors="replace")
+        for header in quoted_include.findall(text):
+            if (path.name,header) in inactive_host_only_includes: continue
+            assert (path.parent/header).is_file() or (att_include/header).is_file(), (path,header)
+        for pattern in forbidden_patterns:
+            assert not pattern.search(text), (path,pattern.pattern)
+    for cmake_file in (att_root/"CMakeLists.txt",PROJECT_ROOT/"runtime/common/avanti_runtime.cmake"):
+        for pattern in forbidden_patterns:
+            assert not pattern.search(cmake_file.read_text(encoding="utf-8")),cmake_file
+    print(f"fixedwing_att_files={len(att_files)} standalone include/link audit passed")
     return 0
 
 

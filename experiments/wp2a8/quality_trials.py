@@ -34,7 +34,7 @@ from mpl_style import new_axes, save_figure, setup_chinese_font  # noqa: E402
 from python.bindings import AvantiInput, AvantiLibrary  # noqa: E402
 from python.controller import AvantiController  # noqa: E402
 from python.controller.controllerAPI import (  # noqa: E402
-    FlightController,
+    LegacySurfaceFlightController as FlightController,
     HeadingCommand,
     LoiterCommand,
     PolylinePathFollower,

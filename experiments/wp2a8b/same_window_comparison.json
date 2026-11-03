@@ -1,0 +1,20 @@
+{
+  "window_s": [
+    30,
+    80
+  ],
+  "ga_seed": {
+    "pitch_mae_deg": 19.70279053057675,
+    "pitch_step_rms_deg": 3.6751188971958917,
+    "gamma_rmse_deg": 11.472292540517415,
+    "ias_rmse_mps": 0.4625041949764921,
+    "alt_rmse_m": 0.971299759408512
+  },
+  "selected_profile": {
+    "pitch_mae_deg": 0.00076092796849265,
+    "pitch_step_rms_deg": 1.6912502513025542e-05,
+    "gamma_rmse_deg": 0.029582418400564914,
+    "ias_rmse_mps": 0.051232993568956976,
+    "alt_rmse_m": 0.6025223360208224
+  }
+}

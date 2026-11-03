@@ -1,0 +1,20 @@
+{
+  "case": "loiter_wind",
+  "seconds": 400.0,
+  "wall_seconds": 9.01464439999836,
+  "finite_aircraft_output": true,
+  "ias_rmse_mps": 0.8415400122952033,
+  "alt_rmse_m": 3.013036763923493,
+  "roll_mae_deg": 0.929864160739736,
+  "pitch_mae_deg": 0.7104801265872496,
+  "pitch_command_step_rms_deg": 0.010486449859225531,
+  "throttle_limit_fraction": 0.0,
+  "max_bank_deg": 37.37418836450459,
+  "max_beta_deg": 10.363418364770752,
+  "surface_saturation": null,
+  "surface_telemetry_available": false,
+  "first_hold_time_s": 8.94,
+  "entered_circle_at_m": 119.80054390059703,
+  "radial_mae_m": 564.571366307652,
+  "radial_p95_m": 969.2156646428524
+}

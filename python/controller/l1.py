@@ -56,6 +56,50 @@ class L1Controller:
     def reset(self, batch: int) -> None:
         self._ref_index = np.zeros(batch, dtype=np.int64)
 
+    def heading_guidance(self, chi_ground: np.ndarray, ref: ControlReference,
+                         obs: ControlObservation):
+        """Batch ground-track command, including the exactly-opposite case."""
+        vel = obs.neu_vel[:, :2]
+        gs = np.maximum(np.linalg.norm(vel, axis=1), 1.0)
+        distance = np.clip(self.damping*self.period*gs/np.pi,
+                           self.l1_dist_min, self.l1_dist_max)
+        _,chi_air,_,v_cmd=self._npfg_wind_triangle(np.zeros(len(gs)),chi_ground,
+                np.zeros(len(gs)),ref.airspeed_cmd,ref,obs)
+        wind=obs.wind_neu if self.npfg_enabled and obs.wind_neu is not None else np.zeros_like(vel)
+        air_velocity=vel-wind
+        eta = np.clip(wrap_pi(chi_air-np.arctan2(air_velocity[:, 1], air_velocity[:, 0])),
+                      -np.pi/2, np.pi/2)
+        acceleration = np.clip(4*self.damping**2*gs**2/distance*np.sin(eta),
+                               -self.a_cmd_limit, self.a_cmd_limit)
+        return acceleration,chi_air,np.zeros(len(gs)),v_cmd
+
+    def circle_guidance(self, center_ne: np.ndarray, radius: np.ndarray,
+                        direction: np.ndarray, ref: ControlReference,
+                        obs: ControlObservation):
+        """Circle bearing capture plus aligned curvature feedforward.
+
+        Unlike the legacy radial-only controller, an inward/outward heading
+        receives explicit bearing feedback. The original circle gains seed
+        the radial convergence field; L1 period/damping set bearing bandwidth.
+        """
+        rel=obs.neu_pos[:,:2]-center_ne
+        distance=np.linalg.norm(rel,axis=1)
+        normal=rel/np.maximum(distance[:,None],1e-3)
+        velocity=obs.neu_vel[:,:2]
+        gs=np.maximum(np.linalg.norm(velocity,axis=1),1.)
+        radial_velocity=np.sum(velocity*normal,axis=1)
+        cross=distance-radius
+        correction=np.arctan2(self.circle_kr*cross+self.circle_kv*radial_velocity,gs)
+        chi=np.arctan2(rel[:,1],rel[:,0])+direction*(np.pi/2+correction)
+        feedback,_,_,_=self.heading_guidance(chi,ref,obs)
+        eta=wrap_pi(chi-np.arctan2(velocity[:,1],velocity[:,0]))
+        wind=obs.wind_neu if self.npfg_enabled and obs.wind_neu is not None else np.zeros_like(velocity)
+        air=velocity-wind
+        crab=wrap_pi(np.arctan2(velocity[:,1],velocity[:,0])-np.arctan2(air[:,1],air[:,0]))
+        feedforward=direction*gs**2/(np.maximum(radius,1)*np.maximum(np.cos(crab),.5))*np.maximum(np.cos(eta),0)**2
+        acceleration=np.clip(feedback+feedforward,-self.a_cmd_limit,self.a_cmd_limit)
+        return self._npfg_wind_triangle(acceleration,chi,cross,ref.airspeed_cmd,ref,obs)
+
     def _circle_params(self, path: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """检测圆形路径，返回 (centroid [B,2], radius [B], winding [B], is_circle [B])。"""
         centroid = path[:, :, :2].mean(axis=1)

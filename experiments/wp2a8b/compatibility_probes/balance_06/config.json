@@ -1,0 +1,39 @@
+{
+  "outer": {
+    "l1": {
+      "npfg_enabled": true,
+      "period_s": 11.913220346584133,
+      "damping": 0.6186367698924958,
+      "l1_dist_min_m": 20.0,
+      "l1_dist_max_m": 300.0,
+      "a_cmd_limit_mps2": 15.0,
+      "circle_kr": 0.6965681996324362,
+      "circle_kv": 0.9225083326884499
+    },
+    "coordinated_turn": {
+      "bank_limit_deg": 35.0,
+      "bank_rate_limit_degps": 15.0,
+      "dt": 0.02
+    },
+    "tecs": {
+      "dt": 0.02,
+      "throttle_trim": 0.5237112533716315,
+      "theta_trim_deg": -2,
+      "energy_kp": 0.3,
+      "throttle_kp": 0.15,
+      "throttle_ki": 0.04,
+      "airspeed_kp": 0.4,
+      "airspeed_ki": 0.03,
+      "height_kp": 0.15,
+      "balance_kp": 0.6,
+      "balance_ki": 0.05,
+      "gamma_ff_gain": 0.770883373712698,
+      "bank_comp_gain": 0.1,
+      "climb_sp_limit_mps": 5.0,
+      "gamma_limit_deg": 20.0,
+      "v_dot_limit_mps2": 3.0,
+      "theta_limit_deg": 20.0,
+      "tas_derivative_tau": 0.2
+    }
+  }
+}

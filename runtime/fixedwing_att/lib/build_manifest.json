@@ -1,0 +1,51 @@
+{
+  "build_date": "2026-11-03",
+  "windows_toolchain": "MinGW GCC 8.1.0, x86_64",
+  "linux_toolchain": "Zig 0.13.0 / Clang 18.1.6, Windows cross-build x86_64-linux-gnu.2.35",
+  "linux_runtime_tested": false,
+  "windows_ctest_passed": true,
+  "artifacts": [
+    {
+      "file": "runtime\\fixedwing_att\\lib\\avanti2_att.dll",
+      "bytes": 571103,
+      "sha256": "f4aa3dd550dc4e701ff18e28533325da4a48bd6f757b9deb43fdc967527c243f",
+      "format": "PE32+ x86_64 DLL"
+    },
+    {
+      "file": "runtime\\fixedwing_att\\lib\\libavanti2_att.so",
+      "bytes": 2658712,
+      "sha256": "ce2a22232130277ac7a2090baab284b095f8e746e9a2f50425092db8194423e7",
+      "format": "ELF64 x86_64 shared object",
+      "needed": [
+        "libm.so.6",
+        "libpthread.so.0",
+        "libc.so.6"
+      ],
+      "abi_exports": [
+        "avanti_att_abi_version",
+        "avanti_att_advance_to",
+        "avanti_att_create",
+        "avanti_att_destroy",
+        "avanti_att_get_default_params",
+        "avanti_att_get_fixed_step",
+        "avanti_att_get_next_tick_time",
+        "avanti_att_get_params",
+        "avanti_att_input_size",
+        "avanti_att_output_size",
+        "avanti_att_params_size",
+        "avanti_att_reset",
+        "avanti_att_set_params",
+        "avanti_att_tick"
+      ],
+      "glibc_versions": [
+        "GLIBC_2.2.5",
+        "GLIBC_2.3",
+        "GLIBC_2.3.2",
+        "GLIBC_2.14",
+        "GLIBC_2.16",
+        "GLIBC_2.29",
+        "GLIBC_2.34"
+      ]
+    }
+  ]
+}

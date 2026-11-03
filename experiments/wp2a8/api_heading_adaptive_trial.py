@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from mpl_style import new_axes, save_figure, setup_chinese_font  # noqa: E402
 from python.controller import (  # noqa: E402
-    FlightController,
+    LegacySurfaceFlightController as FlightController,
     HeadingCommand,
     PolylinePathFollower,
 )

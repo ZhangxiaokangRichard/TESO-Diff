@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from quality_trials import load_tuned  # noqa: E402
 from python.bindings import AvantiInput, AvantiLibrary  # noqa: E402
-from python.controller import FlightController, HeadingCommand  # noqa: E402
+from python.controller import LegacySurfaceFlightController as FlightController, HeadingCommand  # noqa: E402
 from python.controller.types import ControlObservation  # noqa: E402
 
 DEG = np.pi / 180.0

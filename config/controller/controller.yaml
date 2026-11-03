@@ -1,3 +1,4 @@
+# Legacy surface-input backend only. For fixedwing_att use attitude_runtime.yaml.
 # Python 张量并行控制器参数（WP2A-8 v2：PX4 串级架构，docs/TESO-Diff_phase2.md §6.11）
 #
 # 结构（参考 PX4 固定翼控制器系列文章）：
