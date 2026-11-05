@@ -288,6 +288,61 @@ def test_polyline_path_follower_snapshot_roundtrip() -> None:
     assert actual_status == expected_status
 
 
+def test_polyline_path_follower_lap_boundary_no_deadlock() -> None:
+    """回归（wp2a_endpoint 发现）：progress 恰为整圈倍数时不得死锁。
+
+    旧实现中 `% total` 与 `floor(progress/total)` 在整圈边界的浮点舍入
+    可各差一圈，组合出超前一圈的 unwrapped 索引，候选窗口恒为空，
+    progress 永久冻结、heading 指令固定（盘旋 7 圈后直飞逃逸）。
+    """
+    theta = np.linspace(0.0, 2.0 * np.pi, 240, endpoint=False)
+    path = np.stack([200.0 + 80.0 * np.cos(theta), 80.0 * np.sin(theta),
+                     np.full(240, 100.0)], axis=1)
+    follower = PolylinePathFollower(path, airspeed=16.0, closed=True,
+                                    lookahead_min_m=35.0, lookahead_max_m=55.0)
+    for laps in (1, 7, 13):
+        follower.reset(initial_chi=0.0)
+        boundary = laps * follower._total_len  # 浮点整圈倍数（易触发舍入不一致）
+        snap = follower.get_snapshot()
+        snap["progress_m"] = boundary
+        snap["last_timestamp"] = 0.0
+        snap["last_chi"] = np.pi / 2.0
+        follower.set_snapshot(snap)
+        progress = []
+        for k in range(1, 11):
+            arc = 0.3 + 1.6 * k  # 飞机沿圆弧继续前进（16 m/s × 0.1 s 更新）
+            angle = arc / 80.0
+            pos = np.array([200.0 + 80.5 * np.cos(angle),
+                            80.5 * np.sin(angle), 100.0])
+            follower.update(pos, 0.1 * k, 16.0)
+            progress.append(follower.status().progress_m)
+        assert progress[-1] > boundary + 5.0, (
+            f"progress deadlocked at lap boundary x{laps}: {progress}")
+        assert all(b >= a for a, b in zip(progress, progress[1:]))
+
+
+def test_polyline_path_follower_altitude_follow() -> None:
+    """三维航迹：altitude_follow 输出路径斜率对应的倾角，超限时限幅。"""
+    north = np.linspace(0.0, 2000.0, 201)
+    path = np.stack([north, np.zeros_like(north), 100.0 + 0.1 * north], axis=1)
+    follower = PolylinePathFollower(path, airspeed=16.0, closed=False,
+                                    altitude_follow=True)
+    follower.reset(initial_chi=0.0)
+    command = follower.update(np.array([5.0, 0.0, 100.5]), 0.0, 16.0)
+    assert abs(command.gamma - np.arctan(0.1)) < 1e-6
+
+    steep = np.stack([north, np.zeros_like(north), 100.0 + 1.0 * north], axis=1)
+    follower = PolylinePathFollower(steep, airspeed=16.0, closed=False,
+                                    altitude_follow=True)
+    follower.reset(initial_chi=0.0)
+    command = follower.update(np.array([5.0, 0.0, 105.0]), 0.0, 16.0)
+    assert abs(command.gamma - np.deg2rad(15.0)) < 1e-9
+
+    flat = PolylinePathFollower(path, airspeed=16.0, closed=False, gamma=0.02)
+    flat.reset(initial_chi=0.0)
+    assert flat.update(np.array([5.0, 0.0, 100.5]), 0.0, 16.0).gamma == 0.02
+
+
 if __name__ == "__main__":
     test_pid_tensorized()
     test_pid_snapshot_roundtrip()
@@ -302,4 +357,6 @@ if __name__ == "__main__":
     test_polyline_path_follower_lookahead_and_rate_limit()
     test_polyline_path_follower_crossing_branch_and_progress()
     test_polyline_path_follower_snapshot_roundtrip()
+    test_polyline_path_follower_lap_boundary_no_deadlock()
+    test_polyline_path_follower_altitude_follow()
     print("python package unit tests passed")

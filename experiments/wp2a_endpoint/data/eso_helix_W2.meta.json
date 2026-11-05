@@ -1,0 +1,71 @@
+{
+  "schema_version": "avanti-eso-wp2a-endpoint-v0.2",
+  "run": "eso_helix_W2",
+  "subject": "helix",
+  "scenario": "S1",
+  "label": "螺旋线",
+  "route_params": {
+    "center_ne": [
+      200.0,
+      0.0
+    ],
+    "radius_m": 80.0,
+    "climb_slope": 0.05,
+    "gamma_deg": 2.862405226111748,
+    "laps": 12,
+    "start_altitude_m": 100.0
+  },
+  "closed": false,
+  "lap_length_m": 502.6548245743669,
+  "wind": {
+    "wind_id": "W2",
+    "params": {
+      "mechanism": "tanh_vertical_shear_layer",
+      "layer_altitude_m": 100.0,
+      "transition_half_width_m": 10.0,
+      "delta_v_east_mps": 4.0,
+      "horizontal_uniformity": "uniform in North/East",
+      "vertical_component": "none"
+    }
+  },
+  "dt_s": 0.02,
+  "ticks": 24000,
+  "frames": {
+    "pos_vel": "NEU (North/East/Up-positive), m, m/s",
+    "wind_flat": "flat-Earth Xe/Ye/Ze (down-positive), m/s",
+    "wind_neu": "NEU (Up-positive), m/s",
+    "angles": "rad; euler relative to NEU; body rates FRD"
+  },
+  "path_following": "PolylinePathFollower(altitude_follow=True): heading from path plan, flight-path angle from path segment slope (clipped to +/-15 deg)",
+  "known_wind_assumption": "controller uses local wind truth (no estimator)",
+  "wind_transport_delay_ticks": 1,
+  "validation": {
+    "subject": "helix",
+    "wind": "W2",
+    "ticks": 24000,
+    "seconds": 480.0,
+    "channels_complete": true,
+    "all_finite": true,
+    "time_uniform_0p02s": true,
+    "relative_time_zero_start": true,
+    "progress_monotonic": true,
+    "ias_rmse_mps": 0.6771823995156635,
+    "alt_rmse_m": 1.9670934657698043,
+    "path_cross_mae_m": 2.185072936699413,
+    "path_cross_p95_m": 4.180133345374198,
+    "completed_laps": 11,
+    "max_bank_deg": 37.24805870540697,
+    "max_gamma_cmd_deg": 2.862486836027678,
+    "max_beta_deg": 5.701520712797023,
+    "altitude_min_m": 100.00014447764869,
+    "altitude_max_m": 407.12777660888844,
+    "throttle_limit_fraction": 0.0,
+    "energy_env_total_jpkg": -12.11390760936694,
+    "edot_a_mean_wpkg": 6.235977601868948,
+    "shear_layer_crossings": 0,
+    "shear_layer_time_fraction": 0.06408333333333334,
+    "p_shear_abs_mean_wpkg": 0.0013821938311740355,
+    "p_shear_mean_wpkg": -0.0008962984623255732,
+    "wall_seconds_batch3": 22.867430899990723
+  }
+}

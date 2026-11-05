@@ -1,0 +1,75 @@
+{
+  "schema_version": "avanti-eso-wp2a-endpoint-v0.2",
+  "run": "eso_figure8_W0",
+  "subject": "figure8",
+  "scenario": "S2",
+  "label": "空间8字",
+  "route_params": {
+    "circle_centers_ne": [
+      [
+        -300.0,
+        0
+      ],
+      [
+        700.0,
+        0
+      ]
+    ],
+    "radius_m": 80.0,
+    "center_altitude_m": [
+      125.0,
+      75.0
+    ],
+    "center_dh_m": 50.0,
+    "start_ne_alt": [
+      200,
+      0,
+      100.0
+    ]
+  },
+  "closed": true,
+  "lap_length_m": 2528.2987380841732,
+  "wind": {
+    "wind_id": "W0",
+    "params": {
+      "mechanism": "none"
+    }
+  },
+  "dt_s": 0.02,
+  "ticks": 24000,
+  "frames": {
+    "pos_vel": "NEU (North/East/Up-positive), m, m/s",
+    "wind_flat": "flat-Earth Xe/Ye/Ze (down-positive), m/s",
+    "wind_neu": "NEU (Up-positive), m/s",
+    "angles": "rad; euler relative to NEU; body rates FRD"
+  },
+  "path_following": "PolylinePathFollower(altitude_follow=True): heading from path plan, flight-path angle from path segment slope (clipped to +/-15 deg)",
+  "known_wind_assumption": "controller uses local wind truth (no estimator)",
+  "wind_transport_delay_ticks": 1,
+  "validation": {
+    "subject": "figure8",
+    "wind": "W0",
+    "ticks": 24000,
+    "seconds": 480.0,
+    "channels_complete": true,
+    "all_finite": true,
+    "time_uniform_0p02s": true,
+    "relative_time_zero_start": true,
+    "progress_monotonic": true,
+    "ias_rmse_mps": 0.5192090023714633,
+    "alt_rmse_m": 2.8272715718651784,
+    "path_cross_mae_m": 0.6526341826437853,
+    "path_cross_p95_m": 2.5904590393664253,
+    "completed_laps": 3,
+    "max_bank_deg": 18.32838774491532,
+    "max_gamma_cmd_deg": 3.4783337769701523,
+    "max_beta_deg": 3.0887855708778704,
+    "altitude_min_m": 76.1641159765592,
+    "altitude_max_m": 128.71027277204115,
+    "throttle_limit_fraction": 0.0,
+    "energy_env_total_jpkg": -0.0,
+    "edot_a_mean_wpkg": 0.4254895146435664,
+    "zero_wind_zero_energy_ok": true,
+    "wall_seconds_batch3": 23.575176399986958
+  }
+}

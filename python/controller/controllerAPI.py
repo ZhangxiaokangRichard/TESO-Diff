@@ -46,6 +46,7 @@ class HeadingCommand:
     gamma: float       # 期望航迹倾角，rad（正为爬升）
     chi: float         # 期望航迹偏角，rad（从北顺时针）
     timestamp: float = 0.0  # 指令时间戳，s
+    altitude: Optional[float] = None  # 显式高度参考，m（None 时由 gamma 积分）
 
 
 @dataclass(frozen=True)
@@ -89,6 +90,8 @@ class PolylinePathFollower:
         search_back_segments: int = 2,
         search_forward_segments: int = 20,
         progress_rate_factor: float = 3.0,
+        altitude_follow: bool = False,
+        max_gamma_deg: float = 15.0,
     ):
         points = np.asarray(path, dtype=np.float64)
         if points.ndim != 2 or points.shape[1] != 3 or points.shape[0] < 3:
@@ -121,6 +124,8 @@ class PolylinePathFollower:
         self.search_back_segments = max(0, int(search_back_segments))
         self.search_forward_segments = max(1, int(search_forward_segments))
         self.progress_rate_factor = max(1.0, float(progress_rate_factor))
+        self.altitude_follow = bool(altitude_follow)
+        self.max_gamma = float(np.deg2rad(max_gamma_deg))
 
         if self.closed:
             p0 = points
@@ -227,13 +232,15 @@ class PolylinePathFollower:
             min(np.searchsorted(self._cum, progress_mod, side="right") - 1,
                 self._n_seg - 1)
         )
+        gamma = self._gamma_at(progress + lookahead) if self.altitude_follow else self.gamma
         self._last_timestamp = now
         self._last_chi = chi_command
         self._last_command = HeadingCommand(
             airspeed=self.airspeed,
-            gamma=self.gamma,
+            gamma=gamma,
             chi=chi_command,
             timestamp=now,
+            altitude=float(projection[2]) if self.altitude_follow else None,
         )
         self._status = PathFollowerStatus(
             segment_index=segment_index,
@@ -264,6 +271,7 @@ class PolylinePathFollower:
                 "gamma": self._last_command.gamma,
                 "chi": self._last_command.chi,
                 "timestamp": self._last_command.timestamp,
+                "altitude": self._last_command.altitude,
             },
             "status": None if self._status is None else dict(self._status.__dict__),
         }
@@ -295,12 +303,24 @@ class PolylinePathFollower:
         dt: float,
     ) -> tuple[np.ndarray, np.ndarray, float]:
         """在受限的前向弧长窗口内投影，避免错点、倒退和交叉串支。"""
-        progress_mod = self._progress_m % self._total_len if self.closed else self._progress_m
-        current_idx = int(min(
+        # lap 与 lap 内弧长必须由同一次 floor 一致导出：progress 恰为整圈
+        # 倍数时，`% total` 与 `floor(progress/total)` 的舍入可能各差一圈，
+        # 组合出超前一整圈的 unwrapped 索引，使候选窗口恒为空、进度死锁。
+        if self.closed:
+            current_lap = int(np.floor(self._progress_m / self._total_len))
+            progress_mod = self._progress_m - current_lap * self._total_len
+            if progress_mod < 0.0:
+                current_lap -= 1
+                progress_mod += self._total_len
+            progress_mod = float(np.clip(progress_mod, 0.0, self._total_len))
+        else:
+            current_lap = 0
+            progress_mod = self._progress_m
+        current_idx = int(np.clip(
             np.searchsorted(self._cum, progress_mod, side="right") - 1,
+            0,
             self._n_seg - 1,
         ))
-        current_lap = int(np.floor(self._progress_m / self._total_len)) if self.closed else 0
         current_unwrapped = current_lap * self._n_seg + current_idx
         max_advance = max(
             self.progress_rate_factor * max(speed, self.airspeed * 0.5) * dt,
@@ -365,6 +385,16 @@ class PolylinePathFollower:
 
     def _point_at(self, progress_m: float) -> np.ndarray:
         return self._point_and_tangent(progress_m)[0]
+
+    def _gamma_at(self, progress_m: float) -> float:
+        """路径在给定弧长处的航迹倾角（正为爬升），限幅到 ±max_gamma。"""
+        if self.closed:
+            s = progress_m % self._total_len
+        else:
+            s = float(np.clip(progress_m, 0.0, self._total_len))
+        idx = int(min(np.searchsorted(self._cum, s, side="right") - 1, self._n_seg - 1))
+        gamma = np.arctan2(self._seg_vec[idx, 2], self._seg_len[idx])
+        return float(np.clip(gamma, -self.max_gamma, self.max_gamma))
 
 
 class LegacySurfaceFlightController:
@@ -606,6 +636,7 @@ class FlightController:
         self._gamma=np.zeros(batch)
         self._chi=np.zeros(batch)
         self._alt_ref=np.full(batch,np.nan)
+        self._alt_explicit=np.zeros(batch,dtype=bool)
         self._pending=[]
         self._last_submitted=np.full(batch,-np.inf)
         self._submitted_commands=[None for _ in range(batch)]
@@ -641,6 +672,7 @@ class FlightController:
             if cmd.radius<=0 or cmd.direction not in (-1,1):raise ValueError('positive radius and direction +/-1 required')
         else:
             values.extend([cmd.gamma,cmd.chi])
+            if cmd.altitude is not None:values.append(cmd.altitude)
             if abs(cmd.gamma)>self.outer.tecs.gamma_limit:raise ValueError('gamma exceeds TECS operating range')
         if not np.isfinite(values).all() or cmd.airspeed<=0:raise ValueError('finite command with positive IAS required')
         if np.any(cmd.timestamp<self._last_submitted[idx]-1e-9):raise ValueError('command timestamp moved backwards')
@@ -669,6 +701,11 @@ class FlightController:
                 self._gamma[idx]=cmd.gamma
                 self._chi[idx]=_wrap_pi(cmd.chi)
                 self._mode[idx]=self.HEADING
+                if cmd.altitude is None:
+                    self._alt_explicit[idx]=False
+                else:
+                    self._alt_ref[idx]=cmd.altitude
+                    self._alt_explicit[idx]=True
             else:
                 self._mode[idx]=self.LOITER
                 self._phase[idx]=self.APPROACH
@@ -727,7 +764,8 @@ class FlightController:
         }
         # Advance an independent trajectory reference, never re-anchor to actual height.
         climb=np.linalg.norm(obs.neu_vel[:,:2],axis=1)*np.tan(gamma)
-        self._alt_ref[heading]+=self.dt*climb[heading]
+        integrate=heading&~self._alt_explicit
+        self._alt_ref[integrate]+=self.dt*climb[integrate]
         self._last_time=now
         return AttitudeCommand(phi,theta,throttle)
 

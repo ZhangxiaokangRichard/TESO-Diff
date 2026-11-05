@@ -1,0 +1,76 @@
+{
+  "schema_version": "avanti-eso-wp2a-endpoint-v0.2",
+  "run": "eso_racetrack_W1",
+  "subject": "racetrack",
+  "scenario": "S3",
+  "label": "跑马场",
+  "route_params": {
+    "center_ne": [
+      200.0,
+      0.0
+    ],
+    "straight_m": 820.0,
+    "radius_m": 80.0,
+    "end_arc_altitude_m": [
+      100.0,
+      50.0
+    ],
+    "center_dh_m": 50.0
+  },
+  "closed": true,
+  "lap_length_m": 2142.647577251098,
+  "wind": {
+    "wind_id": "W1",
+    "params": {
+      "mechanism": "gaussian_thermal_column",
+      "center_ne": [
+        200.0,
+        0.0
+      ],
+      "radius_m": 90.0,
+      "peak_up_mps": 2.0,
+      "altitude_dependence": "none (synthetic column)"
+    }
+  },
+  "dt_s": 0.02,
+  "ticks": 24000,
+  "frames": {
+    "pos_vel": "NEU (North/East/Up-positive), m, m/s",
+    "wind_flat": "flat-Earth Xe/Ye/Ze (down-positive), m/s",
+    "wind_neu": "NEU (Up-positive), m/s",
+    "angles": "rad; euler relative to NEU; body rates FRD"
+  },
+  "path_following": "PolylinePathFollower(altitude_follow=True): heading from path plan, flight-path angle from path segment slope (clipped to +/-15 deg)",
+  "known_wind_assumption": "controller uses local wind truth (no estimator)",
+  "wind_transport_delay_ticks": 1,
+  "validation": {
+    "subject": "racetrack",
+    "wind": "W1",
+    "ticks": 24000,
+    "seconds": 480.0,
+    "channels_complete": true,
+    "all_finite": true,
+    "time_uniform_0p02s": true,
+    "relative_time_zero_start": true,
+    "progress_monotonic": true,
+    "ias_rmse_mps": 0.9661898876819495,
+    "alt_rmse_m": 4.83731953581818,
+    "path_cross_mae_m": 0.6676721813292993,
+    "path_cross_p95_m": 2.433084128167783,
+    "completed_laps": 3,
+    "max_bank_deg": 22.42385754666749,
+    "max_gamma_cmd_deg": 3.4893249057970825,
+    "max_beta_deg": 3.5804873699903643,
+    "altitude_min_m": 54.43641745770834,
+    "altitude_max_m": 102.39181544736597,
+    "throttle_limit_fraction": 0.18960842704120184,
+    "energy_env_total_jpkg": 698.3100052346256,
+    "edot_a_mean_wpkg": -0.5189849403202862,
+    "thermal_core_tick_fraction": 0.08533333333333333,
+    "p_env_core_mean_wpkg": 8.300466660336287,
+    "p_env_core_positive": true,
+    "throttle_updraft_corr": -0.2427224747041006,
+    "throttle_relief_consistent": true,
+    "wall_seconds_batch3": 23.505700400011847
+  }
+}

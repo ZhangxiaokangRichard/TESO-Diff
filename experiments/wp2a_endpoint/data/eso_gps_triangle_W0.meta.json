@@ -1,0 +1,75 @@
+{
+  "schema_version": "avanti-eso-wp2a-endpoint-v0.2",
+  "run": "eso_gps_triangle_W0",
+  "subject": "gps_triangle",
+  "scenario": "S4",
+  "label": "GPS三角",
+  "route_params": {
+    "vertices_ne": [
+      [
+        -868.0979980008078,
+        0.0
+      ],
+      [
+        734.0489990004039,
+        -925.0
+      ],
+      [
+        734.0489990004039,
+        925.0
+      ]
+    ],
+    "side_m": 1850.0,
+    "corner_radius_m": 60.0,
+    "corner_altitude_m": [
+      100.0,
+      150.0,
+      200.0
+    ]
+  },
+  "closed": true,
+  "lap_length_m": 5303.376273662215,
+  "wind": {
+    "wind_id": "W0",
+    "params": {
+      "mechanism": "none"
+    }
+  },
+  "dt_s": 0.02,
+  "ticks": 24000,
+  "frames": {
+    "pos_vel": "NEU (North/East/Up-positive), m, m/s",
+    "wind_flat": "flat-Earth Xe/Ye/Ze (down-positive), m/s",
+    "wind_neu": "NEU (Up-positive), m/s",
+    "angles": "rad; euler relative to NEU; body rates FRD"
+  },
+  "path_following": "PolylinePathFollower(altitude_follow=True): heading from path plan, flight-path angle from path segment slope (clipped to +/-15 deg)",
+  "known_wind_assumption": "controller uses local wind truth (no estimator)",
+  "wind_transport_delay_ticks": 1,
+  "validation": {
+    "subject": "gps_triangle",
+    "wind": "W0",
+    "ticks": 24000,
+    "seconds": 480.0,
+    "channels_complete": true,
+    "all_finite": true,
+    "time_uniform_0p02s": true,
+    "relative_time_zero_start": true,
+    "progress_monotonic": true,
+    "ias_rmse_mps": 0.5711551125411,
+    "alt_rmse_m": 3.2365916622201225,
+    "path_cross_mae_m": 0.7120426932035938,
+    "path_cross_p95_m": 4.269881050828677,
+    "completed_laps": 1,
+    "max_bank_deg": 25.569131018818325,
+    "max_gamma_cmd_deg": 3.4847594780607065,
+    "max_beta_deg": 4.877291722381094,
+    "altitude_min_m": 99.74506689286844,
+    "altitude_max_m": 200.81577424719973,
+    "throttle_limit_fraction": 0.07622561002711231,
+    "energy_env_total_jpkg": -0.0,
+    "edot_a_mean_wpkg": 0.8522321279578612,
+    "zero_wind_zero_energy_ok": true,
+    "wall_seconds_batch3": 23.987852999998722
+  }
+}

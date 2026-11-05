@@ -1,0 +1,74 @@
+{
+  "schema_version": "avanti-eso-wp2a-endpoint-v0.2",
+  "run": "eso_helix_W1",
+  "subject": "helix",
+  "scenario": "S1",
+  "label": "螺旋线",
+  "route_params": {
+    "center_ne": [
+      200.0,
+      0.0
+    ],
+    "radius_m": 80.0,
+    "climb_slope": 0.05,
+    "gamma_deg": 2.862405226111748,
+    "laps": 12,
+    "start_altitude_m": 100.0
+  },
+  "closed": false,
+  "lap_length_m": 502.6548245743669,
+  "wind": {
+    "wind_id": "W1",
+    "params": {
+      "mechanism": "gaussian_thermal_column",
+      "center_ne": [
+        200.0,
+        0.0
+      ],
+      "radius_m": 90.0,
+      "peak_up_mps": 2.0,
+      "altitude_dependence": "none (synthetic column)"
+    }
+  },
+  "dt_s": 0.02,
+  "ticks": 24000,
+  "frames": {
+    "pos_vel": "NEU (North/East/Up-positive), m, m/s",
+    "wind_flat": "flat-Earth Xe/Ye/Ze (down-positive), m/s",
+    "wind_neu": "NEU (Up-positive), m/s",
+    "angles": "rad; euler relative to NEU; body rates FRD"
+  },
+  "path_following": "PolylinePathFollower(altitude_follow=True): heading from path plan, flight-path angle from path segment slope (clipped to +/-15 deg)",
+  "known_wind_assumption": "controller uses local wind truth (no estimator)",
+  "wind_transport_delay_ticks": 1,
+  "validation": {
+    "subject": "helix",
+    "wind": "W1",
+    "ticks": 24000,
+    "seconds": 480.0,
+    "channels_complete": true,
+    "all_finite": true,
+    "time_uniform_0p02s": true,
+    "relative_time_zero_start": true,
+    "progress_monotonic": true,
+    "ias_rmse_mps": 0.10941843969151778,
+    "alt_rmse_m": 1.8246984584403725,
+    "path_cross_mae_m": 2.0393950099752356,
+    "path_cross_p95_m": 2.56815870101391,
+    "completed_laps": 11,
+    "max_bank_deg": 34.86084398261445,
+    "max_gamma_cmd_deg": 2.862486836027678,
+    "max_beta_deg": 5.6168775654994665,
+    "altitude_min_m": 100.00014447764869,
+    "altitude_max_m": 405.35154844604114,
+    "throttle_limit_fraction": 0.0,
+    "energy_env_total_jpkg": 3250.134212811465,
+    "edot_a_mean_wpkg": 6.13965643699472,
+    "thermal_core_tick_fraction": 0.77125,
+    "p_env_core_mean_wpkg": 8.458645007655754,
+    "p_env_core_positive": true,
+    "throttle_updraft_corr": -0.8102232819728508,
+    "throttle_relief_consistent": true,
+    "wall_seconds_batch3": 22.867430899990723
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "schema_version": "avanti-eso-wp2a-endpoint-v0.2",
+  "run": "eso_gps_triangle_W2",
+  "subject": "gps_triangle",
+  "scenario": "S4",
+  "label": "GPS三角",
+  "route_params": {
+    "vertices_ne": [
+      [
+        -868.0979980008078,
+        0.0
+      ],
+      [
+        734.0489990004039,
+        -925.0
+      ],
+      [
+        734.0489990004039,
+        925.0
+      ]
+    ],
+    "side_m": 1850.0,
+    "corner_radius_m": 60.0,
+    "corner_altitude_m": [
+      100.0,
+      150.0,
+      200.0
+    ]
+  },
+  "closed": true,
+  "lap_length_m": 5303.376273662215,
+  "wind": {
+    "wind_id": "W2",
+    "params": {
+      "mechanism": "tanh_vertical_shear_layer",
+      "layer_altitude_m": 100.0,
+      "transition_half_width_m": 10.0,
+      "delta_v_east_mps": 4.0,
+      "horizontal_uniformity": "uniform in North/East",
+      "vertical_component": "none"
+    }
+  },
+  "dt_s": 0.02,
+  "ticks": 24000,
+  "frames": {
+    "pos_vel": "NEU (North/East/Up-positive), m, m/s",
+    "wind_flat": "flat-Earth Xe/Ye/Ze (down-positive), m/s",
+    "wind_neu": "NEU (Up-positive), m/s",
+    "angles": "rad; euler relative to NEU; body rates FRD"
+  },
+  "path_following": "PolylinePathFollower(altitude_follow=True): heading from path plan, flight-path angle from path segment slope (clipped to +/-15 deg)",
+  "known_wind_assumption": "controller uses local wind truth (no estimator)",
+  "wind_transport_delay_ticks": 1,
+  "validation": {
+    "subject": "gps_triangle",
+    "wind": "W2",
+    "ticks": 24000,
+    "seconds": 480.0,
+    "channels_complete": true,
+    "all_finite": true,
+    "time_uniform_0p02s": true,
+    "relative_time_zero_start": true,
+    "progress_monotonic": true,
+    "ias_rmse_mps": 1.1217231416641618,
+    "alt_rmse_m": 4.76169563560801,
+    "path_cross_mae_m": 0.9063532264789462,
+    "path_cross_p95_m": 5.355164348454236,
+    "completed_laps": 1,
+    "max_bank_deg": 28.340163902575284,
+    "max_gamma_cmd_deg": 3.4847594780607065,
+    "max_beta_deg": 7.05679282285699,
+    "altitude_min_m": 99.3390917334295,
+    "altitude_max_m": 200.66233566259245,
+    "throttle_limit_fraction": 0.17285212676118938,
+    "energy_env_total_jpkg": 19.607566285336734,
+    "edot_a_mean_wpkg": 0.702815671753374,
+    "shear_layer_crossings": 4,
+    "shear_layer_time_fraction": 0.3852083333333333,
+    "p_shear_abs_mean_wpkg": 0.07952339488879796,
+    "p_shear_mean_wpkg": 0.0434413805435273,
+    "wall_seconds_batch3": 23.987852999998722
+  }
+}
